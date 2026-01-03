@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17.4-alpine
+    env_file: .env
+    restart: unless-stopped
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - app-net
+networks:
+  app-net:
+    driver: bridge

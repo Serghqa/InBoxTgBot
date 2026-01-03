@@ -2,10 +2,10 @@ import asyncio
 import dialogs
 import logging
 
-from aiogram import Bot, Dispatcher, Router
+from aiogram import Dispatcher, Router
 from aiogram_dialog import setup_dialogs
 
-from common import bot, set_bot_commands
+from common import bot, set_bot_commands, engine, Session
 from middleware import LoggingMiddleware
 from logging_setting import logging_config, setting_logging
 

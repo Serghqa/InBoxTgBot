@@ -4,21 +4,30 @@ from dataclasses import dataclass
 
 @dataclass
 class TgBot:
-    token: str
+    TOKEN: str
 
 
 @dataclass
 class InboxConfig:
-    inbox_password: str
-    user_name: str
-    mail_server: str
-    yandex_server: str
+    INBOX_PASSWORD: str
+    USER_NAME: str
+    MAIL_SERVER: str
+    YANDEX_SERVER: str
+
+
+@dataclass
+class DbConfig:
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_NAME: str
 
 
 @dataclass
 class Config:
     inbox: InboxConfig
     tg_bot: TgBot
+    db: DbConfig
 
 
 def load_config(path: str | None = None) -> Config:
@@ -27,12 +36,18 @@ def load_config(path: str | None = None) -> Config:
 
     return Config(
         inbox=InboxConfig(
-            inbox_password=env("INBOX_PASSWORD"),
-            user_name=env("USER_NAME"),
-            mail_server=env("MAIL_SERVER"),
-            yandex_server=env("YANDEX_SERVER"),
+            INBOX_PASSWORD=env("INBOX_PASSWORD"),
+            USER_NAME=env("USER_NAME"),
+            MAIL_SERVER=env("MAIL_SERVER"),
+            YANDEX_SERVER=env("YANDEX_SERVER"),
         ),
         tg_bot=TgBot(
-            token=env("TOKEN"),
+            TOKEN=env("TOKEN"),
+        ),
+        db=DbConfig(
+            DB_USER=env("POSTGRES_USER"),
+            DB_PASSWORD=env("POSTGRES_PASSWORD"),
+            DB_HOST=env("POSTGRES_HOST"),
+            DB_NAME=env("POSTGRES_NAME")
         ),
     )

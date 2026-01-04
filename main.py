@@ -5,7 +5,13 @@ import logging
 from aiogram import Dispatcher, Router
 from aiogram_dialog import setup_dialogs
 
-from common import bot, set_bot_commands, engine, Session
+from common import (
+    bot,
+    set_bot_commands,
+    engine,
+    Session,
+    create_tables,
+)
 from middleware import LoggingMiddleware, DbSessionMiddleware
 from logging_setting import logging_config, setting_logging
 
@@ -40,6 +46,8 @@ setting_dispatcher(dispatcher=dp)
 
 
 async def main():
+
+    await create_tables(engine=engine)
 
     await set_bot_commands(bot)
     await bot.delete_webhook(drop_pending_updates=True)

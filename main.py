@@ -6,7 +6,7 @@ from aiogram import Dispatcher, Router
 from aiogram_dialog import setup_dialogs
 
 from common import bot, set_bot_commands, engine, Session
-from middleware import LoggingMiddleware
+from middleware import LoggingMiddleware, DbSessionMiddleware
 from logging_setting import logging_config, setting_logging
 
 
@@ -23,7 +23,7 @@ def setup_all_dialogs(router: Router) -> Router:
 
 def setting_dispatcher(dispatcher: Dispatcher) -> None:
 
-    # dispatcher.update.middleware(DbSessionMiddleware(Session))
+    dispatcher.update.middleware(DbSessionMiddleware(Session))
 
     router = Router()
 

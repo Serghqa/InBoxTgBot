@@ -15,9 +15,9 @@ def create_engine(config: Config) -> AsyncEngine:
 
     engine: AsyncEngine = create_async_engine(
         url=(
-            f'postgresql+asyncpg://'
-            f'{config.db.DB_USER}:{config.db.DB_PASSWORD}@'
-            f'{config.db.DB_HOST}/{config.db.DB_NAME}'
+            f"postgresql+asyncpg://"
+            f"{config.db.DB_USER}:{config.db.DB_PASSWORD}@"
+            f"{config.db.DB_HOST}/{config.db.DB_NAME}"
         ),
         echo=False,
     )

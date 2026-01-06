@@ -61,7 +61,7 @@ add_mail_dialog = Dialog(
     ),
     Window(
         Format(
-            text="Имя почты: --{name_mail}--"
+            text="Логин: --{name_mail}--"
         ),
         Format(
             text="Пароль: --Введите пароль--"

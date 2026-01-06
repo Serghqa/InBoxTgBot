@@ -9,7 +9,13 @@ from aiogram_dialog import (
 from aiogram_dialog.api.entities.context import Context
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.input import ManagedTextInput
+from imapclient import IMAPClient
+from imapclient.exceptions import IMAPClientError, LoginError
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from db.models import ImapCredentials
+from db.services import UserDAO
 from states import AddMail
 
 
@@ -48,7 +54,6 @@ async def success_login(
     text: str
 ) -> None:
 
-    dialog_manager.dialog_data["name_mail"] = text
     await message.delete()
     await dialog_manager.switch_to(
         state=AddMail.password,
@@ -63,7 +68,25 @@ async def success_password(
     text: str
 ) -> None:
 
-    dialog_manager.dialog_data["password_mail"] = text
+    context: Context = dialog_manager.current_context()
+    host_item: str = context.widget_data.get("radio_mail_host")
+    hosts: dict[str, str] = dialog_manager.start_data.get("hosts")
+    host: str = hosts.get(host_item)
+    name_mail: str = context.widget_data.get("login")
+    password_mail: str = text
+
+    try:
+        with IMAPClient(host) as client:
+            client.login(name_mail, password_mail)
+    except LoginError:
+        await message.answer("Неверный логин или пароль, попробуйте еще раз.")
+        return
+    except IMAPClientError:
+        logger.error("Ошибка подключения imapclient", exc_info=True)
+        return
+
+    dialog_manager.dialog_data["host"] = host
+
     await message.delete()
     await dialog_manager.switch_to(
         state=AddMail.add_mail,
@@ -87,7 +110,12 @@ async def cancel_add_mail(
     dialog_manager: DialogManager
 ) -> None:
 
+    context: Context = dialog_manager.current_context()
+    context.widget_data.pop("login", None)
+    context.widget_data.pop("password", None)
+
     dialog_manager.dialog_data.clear()
+
     await dialog_manager.switch_to(
         state=AddMail.main,
         show_mode=ShowMode.EDIT,
@@ -99,6 +127,48 @@ async def add_mail(
     widget: Button,
     dialog_manager: DialogManager
 ) -> None:
+
+    context: Context = dialog_manager.current_context()
+
+    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
+    name_mail: str = context.widget_data.get("login")
+    pwd_hash_str: str = context.widget_data.get("password")
+    host: str = dialog_manager.dialog_data.get("host")
+    user_id: int = dialog_manager.event.from_user.id
+
+    user_dao = UserDAO(session, user_id)
+
+    try:
+        imap_credentials: ImapCredentials | None = \
+            await user_dao.get_imap_credentials(
+                email=name_mail,
+                imap_server=host,
+                user_id=user_id,
+            )
+        if imap_credentials is not None:
+            await callback.answer(
+                text="Эта почта уже добавлена.",
+                show_alert=True,
+            )
+            return
+
+        await user_dao.add_imap_credentials(
+            email=name_mail,
+            password=pwd_hash_str,
+            imap_server=host,
+            user_id=user_id,
+        )
+    except SQLAlchemyError:
+        logger.error(
+            "Ошибка при попытке получить/добавить %s",
+            ImapCredentials.__name__,
+            exc_info=True,
+        )
+        await callback.answer(
+            text="Произошла ошибка, попробуйте еще раз.",
+            show_alert=True,
+        )
+        return
 
     await dialog_manager.switch_to(
         state=AddMail.success_mail,

@@ -5,6 +5,7 @@ from typing import Callable, Awaitable, Dict, Any
 
 
 class DbSessionMiddleware(BaseMiddleware):
+
     def __init__(
         self,
         session_pool: async_sessionmaker,

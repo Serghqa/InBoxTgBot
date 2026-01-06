@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message
@@ -9,12 +11,18 @@ from aiogram_dialog import (
 )
 from aiogram_dialog.widgets.kbd import Button, Row
 from aiogram_dialog.widgets.text import Const, Format
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .handlers import (
     to_add_mail,
 )
+from db.models import User
+from db.services import UserDAO
 from states import StartSG
 
+
+logger = logging.getLogger(__name__)
 
 start_router = Router()
 
@@ -24,6 +32,25 @@ async def command_start(
     message: Message,
     dialog_manager: DialogManager
 ) -> None:
+
+    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
+    user_id: int = dialog_manager.event.from_user.id
+    user_dao = UserDAO(
+        session=session,
+        user_id=user_id,
+    )
+    try:
+        user: User | None = await user_dao.get_user()
+        if user is None:
+            user: User = await user_dao.add_user()
+    except SQLAlchemyError:
+        await message.answer("Произошла ошибка, попробуйте еще раз.")
+        logger.error(
+            "Ошибка при попытке получить/обновить данные %s",
+            User.__name__,
+            exc_info=True,
+        )
+        return
 
     await dialog_manager.start(
         state=StartSG.main,

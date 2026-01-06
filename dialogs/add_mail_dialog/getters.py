@@ -1,4 +1,5 @@
 from aiogram_dialog import DialogManager
+from aiogram_dialog.api.entities.context import Context
 
 
 async def get_data(
@@ -10,8 +11,10 @@ async def get_data(
     radio_items: list[tuple[str, str]] = \
         dialog_manager.start_data.get("radio_mail_host")
 
-    name_mail: str | None = dialog_manager.dialog_data.get("name_mail")
-    password_mail: str | None = dialog_manager.dialog_data.get("password_mail")
+    context: Context = dialog_manager.current_context()
+
+    name_mail: str | None = context.widget_data.get("login")
+    password_mail: str | None = context.widget_data.get("password")
 
     return {
         "radio": radio_items,

@@ -4,11 +4,13 @@ from dataclasses import dataclass
 
 @dataclass
 class TgBot:
+
     TOKEN: str
 
 
 @dataclass
 class InboxConfig:
+
     INBOX_PASSWORD: str
     USER_NAME: str
     MAIL_SERVER: str
@@ -17,6 +19,7 @@ class InboxConfig:
 
 @dataclass
 class DbConfig:
+
     DB_USER: str
     DB_PASSWORD: str
     DB_HOST: str
@@ -25,6 +28,7 @@ class DbConfig:
 
 @dataclass
 class Config:
+
     inbox: InboxConfig
     tg_bot: TgBot
     db: DbConfig

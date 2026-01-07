@@ -32,15 +32,14 @@ class UserDAO(DAO):
         self,
         email: str,
         password: str,
-        imap_server: str,
-        user_id: int
+        imap_server: str
     ) -> ImapCredentials:
 
         imap_credentials: ImapCredentials = set_imap_credentials(
             email=email,
             password=password,
             imap_server=imap_server,
-            user_id=user_id,
+            user_id=self.user_id,
         )
         self.session.add(imap_credentials)
         await self.session.commit()
@@ -50,8 +49,7 @@ class UserDAO(DAO):
     async def get_imap_credentials(
         self,
         email: str,
-        imap_server: str,
-        user_id: int
+        imap_server: str
     ) -> ImapCredentials | None:
 
         stmt = (
@@ -59,13 +57,26 @@ class UserDAO(DAO):
             .where(
                 ImapCredentials.email == email,
                 ImapCredentials.imap_server == imap_server,
-                ImapCredentials.user_id == user_id
+                ImapCredentials.user_id == self.user_id
             )
         )
 
         result = await self.session.execute(stmt)
 
         return result.scalar()
+
+    async def get_user_credentials(self) -> list[ImapCredentials]:
+
+        stmt = (
+            select(ImapCredentials)
+            .where(
+                ImapCredentials.user_id == self.user_id,
+            )
+        )
+
+        result = await self.session.execute(stmt)
+
+        return result.scalars().all()
 
     def generate_hash(self, password: str) -> str:
 

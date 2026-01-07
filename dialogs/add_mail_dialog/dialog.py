@@ -17,6 +17,7 @@ from .handlers import (
     process_start,
     success_login,
     success_password,
+    to_mail,
 )
 from states import AddMail
 
@@ -98,6 +99,7 @@ add_mail_dialog = Dialog(
             Button(
                 text=Const("К почте"),
                 id="btn_to_mail",
+                on_click=to_mail,
             ),
             Button(
                 text=Const("Добавить еще почту"),

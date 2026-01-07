@@ -5,6 +5,7 @@ from aiogram_dialog import (
     Data,
     DialogManager,
     ShowMode,
+    StartMode,
 )
 from aiogram_dialog.api.entities.context import Context
 from aiogram_dialog.widgets.kbd import Button
@@ -16,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import ImapCredentials
 from db.services import UserDAO
-from states import AddMail
+from states import AddMail, SelectMail
 
 
 logger = logging.getLogger(__name__)
@@ -132,18 +133,18 @@ async def add_mail(
 
     session: AsyncSession = dialog_manager.middleware_data.get("db_session")
     name_mail: str = context.widget_data.get("login")
-    pwd_hash_str: str = context.widget_data.get("password")
+    password: str = context.widget_data.get("password")
     host: str = dialog_manager.dialog_data.get("host")
     user_id: int = dialog_manager.event.from_user.id
 
     user_dao = UserDAO(session, user_id)
+    pwd_hash_str: str = user_dao.generate_hash(password)
 
     try:
         imap_credentials: ImapCredentials | None = \
             await user_dao.get_imap_credentials(
                 email=name_mail,
                 imap_server=host,
-                user_id=user_id,
             )
         if imap_credentials is not None:
             await callback.answer(
@@ -156,7 +157,6 @@ async def add_mail(
             email=name_mail,
             password=pwd_hash_str,
             imap_server=host,
-            user_id=user_id,
         )
     except SQLAlchemyError:
         logger.error(
@@ -172,5 +172,37 @@ async def add_mail(
 
     await dialog_manager.switch_to(
         state=AddMail.success_mail,
+        show_mode=ShowMode.EDIT,
+    )
+
+
+async def to_mail(
+    callback: CallbackQuery,
+    widget: Button,
+    dialog_manager: DialogManager
+) -> None:
+
+    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
+    user_id: int = dialog_manager.event.from_user.id
+
+    user_dao = UserDAO(session, user_id)
+    user_credentials: list[ImapCredentials] = \
+        await user_dao.get_user_credentials()
+    radio_imap_credentials = []
+    data_imap_credentials = {}
+    for item, credentials in enumerate(user_credentials, 1):
+        radio_imap_credentials.append((credentials.email, str(item)))
+        key = f"{credentials.email}_{credentials.imap_server}"
+        data_imap_credentials[key] = credentials.get_data()
+
+    start_data = {
+        "radio_mail_select": radio_imap_credentials,
+        "imap_credentials": data_imap_credentials,
+    }
+
+    await dialog_manager.start(
+        state=SelectMail.main,
+        data=start_data,
+        mode=StartMode.RESET_STACK,
         show_mode=ShowMode.EDIT,
     )

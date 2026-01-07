@@ -1,7 +1,5 @@
-from datetime import date as dt
-from sqlalchemy import BigInteger, Date, ForeignKey, Integer,  String
+from sqlalchemy import BigInteger, ForeignKey, Integer,  String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from typing import Any
 
 
 class Base(DeclarativeBase):
@@ -43,7 +41,17 @@ class ImapCredentials(Base):
         BigInteger,
         ForeignKey("user.user_id", ondelete="CASCADE")
     )
+
     user: Mapped["User"] = relationship(
         "User",
         back_populates="imap_credentials",
     )
+
+    def get_data(self) -> dict:
+
+        return {
+            "email": self.email,
+            "password": self.password,
+            "imap_server": self.imap_server,
+            "user_id": self.user_id,
+        }

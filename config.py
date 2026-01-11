@@ -11,7 +11,6 @@ class TgBot:
 @dataclass
 class InboxConfig:
 
-    INBOX_PASSWORD: str
     USER_NAME: str
     MAIL_SERVER: str
     YANDEX_SERVER: str
@@ -40,7 +39,6 @@ def load_config(path: str | None = None) -> Config:
 
     return Config(
         inbox=InboxConfig(
-            INBOX_PASSWORD=env("INBOX_PASSWORD"),
             USER_NAME=env("USER_NAME"),
             MAIL_SERVER=env("MAIL_SERVER"),
             YANDEX_SERVER=env("YANDEX_SERVER"),

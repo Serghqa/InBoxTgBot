@@ -7,7 +7,7 @@ from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.text import Const, Format
 from operator import itemgetter
 
-from .getters import get_data
+from .getters import get_data, get_data_mail
 from .handlers import (
     add_mail,
     back_to_start_dlg,
@@ -62,10 +62,7 @@ add_mail_dialog = Dialog(
     ),
     Window(
         Format(
-            text="Логин: --{name_mail}--"
-        ),
-        Format(
-            text="Пароль: --Введите пароль--"
+            text="Введите пароль"
         ),
         TextInput(
             id="password",
@@ -89,6 +86,7 @@ add_mail_dialog = Dialog(
             ),
             btn_cancel,
         ),
+        getter=get_data_mail,
         state=AddMail.add_mail,
     ),
     Window(

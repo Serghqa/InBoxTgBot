@@ -16,8 +16,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import ImapCredentials
-from db.services import UserDAO
-from states import AddMail
+from db.services import UserDAO, SecureEncryptor
+from states import AddMail, Mail
 
 
 logger = logging.getLogger(__name__)
@@ -69,10 +69,12 @@ async def success_password(
     text: str
 ) -> None:
 
+    user_id: int = dialog_manager.event.from_user.id
     context: Context = dialog_manager.current_context()
     host_item: str = context.widget_data.get("radio_mail_host")
     hosts: dict[str, str] = dialog_manager.start_data.get("hosts")
     host: str = hosts.get(host_item)
+
     name_mail: str = context.widget_data.get("login")
     password_mail: str = text
 
@@ -84,9 +86,16 @@ async def success_password(
         return
     except IMAPClientError:
         logger.error("Ошибка подключения imapclient", exc_info=True)
+        await message.answer(
+            "Произошла ошибка подключения к почте, попробуйте еще раз"
+        )
         return
 
     dialog_manager.dialog_data["host"] = host
+
+    encrypted = SecureEncryptor(user_id)
+    encrypted_password: str = encrypted.encrypt_data(password_mail)
+    widget.set_widget_data(dialog_manager, encrypted_password)
 
     await message.delete()
     await dialog_manager.switch_to(
@@ -133,12 +142,15 @@ async def add_mail(
 
     session: AsyncSession = dialog_manager.middleware_data.get("db_session")
     name_mail: str = context.widget_data.get("login")
-    password: str = context.widget_data.get("password")
+    encrypted_password: str = context.widget_data.get("password")
     host: str = dialog_manager.dialog_data.get("host")
     user_id: int = dialog_manager.event.from_user.id
 
     user_dao = UserDAO(session, user_id)
-    pwd_hash_str: str = user_dao.generate_hash(password)
+    encryptor = SecureEncryptor(user_id)
+
+    password: str = encryptor.decrypted_data(encrypted_password)
+    pwd_hash_str: str = encryptor.generate_hash_str(password)
 
     try:
         imap_credentials: ImapCredentials | None = \
@@ -182,7 +194,21 @@ async def to_mail(
     dialog_manager: DialogManager
 ) -> None:
 
-    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
-    user_id: int = dialog_manager.event.from_user.id
+    context: Context = dialog_manager.current_context()
 
-    user_dao = UserDAO(session, user_id)
+    host: str = dialog_manager.dialog_data.get("host")
+    name_mail: str = context.widget_data.get("login")
+    encrypted_password: str = context.widget_data.get("password")
+
+    start_data = {
+        "host": host,
+        "login": name_mail,
+        "password": encrypted_password,
+    }
+
+    await dialog_manager.start(
+        state=Mail.main,
+        data=start_data,
+        mode=StartMode.RESET_STACK,
+        show_mode=ShowMode.EDIT,
+    )

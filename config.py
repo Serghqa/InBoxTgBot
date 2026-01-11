@@ -26,11 +26,18 @@ class DbConfig:
 
 
 @dataclass
+class SecretKey:
+
+    SECRET_KEY: str
+
+
+@dataclass
 class Config:
 
     inbox: InboxConfig
     tg_bot: TgBot
     db: DbConfig
+    secret_key: SecretKey
 
 
 def load_config(path: str | None = None) -> Config:
@@ -50,6 +57,9 @@ def load_config(path: str | None = None) -> Config:
             DB_USER=env("POSTGRES_USER"),
             DB_PASSWORD=env("POSTGRES_PASSWORD"),
             DB_HOST=env("POSTGRES_HOST"),
-            DB_NAME=env("POSTGRES_NAME")
+            DB_NAME=env("POSTGRES_NAME"),
+        ),
+        secret_key=SecretKey(
+            SECRET_KEY=env("SECRET_KEY"),
         ),
     )

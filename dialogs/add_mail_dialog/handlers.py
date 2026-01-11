@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import ImapCredentials
 from db.services import UserDAO
-from states import AddMail, SelectMail
+from states import AddMail
 
 
 logger = logging.getLogger(__name__)
@@ -186,23 +186,3 @@ async def to_mail(
     user_id: int = dialog_manager.event.from_user.id
 
     user_dao = UserDAO(session, user_id)
-    user_credentials: list[ImapCredentials] = \
-        await user_dao.get_user_credentials()
-    radio_imap_credentials = []
-    data_imap_credentials = {}
-    for item, credentials in enumerate(user_credentials, 1):
-        radio_imap_credentials.append((credentials.email, str(item)))
-        key = f"{credentials.email}_{credentials.imap_server}"
-        data_imap_credentials[key] = credentials.get_data()
-
-    start_data = {
-        "radio_mail_select": radio_imap_credentials,
-        "imap_credentials": data_imap_credentials,
-    }
-
-    await dialog_manager.start(
-        state=SelectMail.main,
-        data=start_data,
-        mode=StartMode.RESET_STACK,
-        show_mode=ShowMode.EDIT,
-    )

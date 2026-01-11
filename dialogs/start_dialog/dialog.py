@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .handlers import (
     to_add_mail,
+    to_select_mail,
 )
 from db.models import User
 from db.services import UserDAO
@@ -83,6 +84,7 @@ start_dialog = Dialog(
             Button(
                 text=Const("Моя почта"),
                 id="btn_my_mail",
+                on_click=to_select_mail,
             ),
         ),
         state=StartSG.main,

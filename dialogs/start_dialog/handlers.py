@@ -1,11 +1,14 @@
 import logging
 
 from aiogram.types import CallbackQuery
-from aiogram_dialog import DialogManager, ShowMode
+from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.widgets.kbd import Button
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import load_config, Config
-from states import AddMail
+from db.models import ImapCredentials
+from db.services import UserDAO
+from states import AddMail, SelectMail
 
 
 MAIL_ITEM = "1"
@@ -36,5 +39,37 @@ async def to_add_mail(
     await dialog_manager.start(
         state=AddMail.main,
         data=start_data,
+        show_mode=ShowMode.EDIT,
+    )
+
+
+async def to_select_mail(
+    callback: CallbackQuery,
+    widget: Button,
+    dialog_manager: DialogManager
+) -> None:
+
+    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
+    user_id: int = dialog_manager.event.from_user.id
+
+    user_dao = UserDAO(session, user_id)
+    user_credentials: list[ImapCredentials] = \
+        await user_dao.get_user_credentials()
+    radio_imap_credentials = []
+    data_imap_credentials = {}
+    for item, credentials in enumerate(user_credentials, 1):
+        radio_imap_credentials.append((credentials.email, str(item)))
+        key = f"{credentials.email}_{credentials.imap_server}"
+        data_imap_credentials[key] = credentials.get_data()
+
+    start_data = {
+        "radio_mail_select": radio_imap_credentials,
+        "imap_credentials": data_imap_credentials,
+    }
+
+    await dialog_manager.start(
+        state=SelectMail.main,
+        data=start_data,
+        mode=StartMode.RESET_STACK,
         show_mode=ShowMode.EDIT,
     )

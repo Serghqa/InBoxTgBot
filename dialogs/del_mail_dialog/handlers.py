@@ -77,13 +77,13 @@ async def del_mail(
         )
         if result is None:
             await callback.answer(
-                text="Неудалось удалить почту, либо она уже удаленна.",
+                text="Не удалось удалить почту, либо она уже удалена.",
                 show_alert=True,
             )
 
         else:
             await callback.answer(
-                text="Почта успешно удаленна.",
+                text="Почта успешно удалена.",
                 show_alert=True,
             )
     except SQLAlchemyError:
@@ -93,6 +93,6 @@ async def del_mail(
             exc_info=True,
         )
         await callback.answer(
-            text="Произошла неожиданая ошибка, попробуйте еще раз.",
+            text="Произошла неожиданная ошибка, попробуйте еще раз.",
             show_alert=True,
         )

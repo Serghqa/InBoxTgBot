@@ -6,7 +6,7 @@ from aiogram_dialog.widgets.kbd import Button, Row
 from aiogram_dialog.widgets.text import Const, Format
 
 from .handlers import to_select_mail, del_mail
-from states import DelMail
+from dialogs.states import DelMail
 
 
 del_mail_dialog = Dialog(

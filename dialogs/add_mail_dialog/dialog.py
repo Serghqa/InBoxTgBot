@@ -20,7 +20,7 @@ from .handlers import (
     success_password,
     to_mail,
 )
-from states import AddMail
+from dialogs.states import AddMail
 
 
 btn_cancel = Button(

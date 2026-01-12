@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from config import load_config, Config
 from db.models import ImapCredentials
 from db.services import UserDAO
-from states import AddMail, SelectMail
+from dialogs.states import AddMail, SelectMail
 
 
 MAIL_ITEM = "1"

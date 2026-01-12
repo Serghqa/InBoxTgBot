@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import ImapCredentials
 from db.services import UserDAO, SecureEncryptor
-from states import AddMail, Mail, StartSG
+from dialogs.states import AddMail, Mail, StartSG
 
 
 logger = logging.getLogger(__name__)

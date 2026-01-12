@@ -10,7 +10,7 @@ from aiogram_dialog import (
 from aiogram_dialog.api.entities.context import Context
 from aiogram_dialog.widgets.kbd import Button
 
-from states import Mail, StartSG, DelMail
+from dialogs.states import Mail, StartSG, DelMail
 
 
 logger = logging.getLogger(__name__)

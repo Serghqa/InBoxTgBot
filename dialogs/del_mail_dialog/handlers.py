@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from db.models import ImapCredentials
 from db.services import UserDAO
-from states import SelectMail
+from dialogs.states import SelectMail
 
 
 logger = logging.getLogger(__name__)

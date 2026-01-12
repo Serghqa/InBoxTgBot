@@ -9,7 +9,7 @@ from operator import itemgetter
 
 from .getters import get_data
 from .handlers import process_start, to_mail, back_to_start_dlg, to_del_mail
-from states import SelectMail
+from dialogs.states import SelectMail
 
 
 select_mail_dialog = Dialog(

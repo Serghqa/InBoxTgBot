@@ -7,7 +7,7 @@ from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.text import Const, Format
 from operator import itemgetter
 
-from states import Mail
+from dialogs.states import Mail
 
 
 mail_dialog = Dialog(

@@ -20,7 +20,7 @@ from .handlers import (
 )
 from db.models import User
 from db.services import UserDAO
-from states import StartSG
+from dialogs.states import StartSG
 
 
 logger = logging.getLogger(__name__)

@@ -10,6 +10,7 @@ from aiogram_dialog import (
 from aiogram_dialog.api.entities.context import Context
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.input import ManagedTextInput
+from email_validator import validate_email, EmailNotValidError
 from imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError, LoginError
 from sqlalchemy.exc import SQLAlchemyError
@@ -17,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import ImapCredentials
 from db.services import UserDAO, SecureEncryptor
-from states import AddMail, Mail
+from states import AddMail, Mail, StartSG
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,9 @@ async def back_to_start_dlg(
     dialog_manager: DialogManager
 ) -> None:
 
-    await dialog_manager.done(
+    await dialog_manager.start(
+        state=StartSG.main,
+        mode=StartMode.RESET_STACK,
         show_mode=ShowMode.EDIT,
     )
 
@@ -43,7 +46,17 @@ async def process_start(
     context.widget_data["radio_mail_host"] = "1"
 
 
-def input_validate(text: str) -> str:
+def login_validate(text: str) -> str:
+
+    try:
+        validate_email(text, check_deliverability=False)
+    except EmailNotValidError:
+        raise ValueError
+
+    return text
+
+
+def password_validate(text: str) -> str:
 
     return text
 
@@ -111,7 +124,7 @@ async def input_error(
     error: ValueError
 ) -> None:
 
-    pass
+    await message.answer("Недопустимый формат")
 
 
 async def cancel_add_mail(

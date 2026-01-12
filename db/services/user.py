@@ -44,6 +44,24 @@ class UserDAO(DAO):
 
         return imap_credentials
 
+    async def del_imap_credentials(
+        self,
+        email: str,
+        imap_server: str
+    ) -> ImapCredentials | None:
+
+        imap_credentials: ImapCredentials | None = \
+            await self.get_imap_credentials(
+                email=email,
+                imap_server=imap_server
+            )
+
+        if imap_credentials is not None:
+            await self.session.delete(imap_credentials)
+            await self.session.commit()
+
+        return imap_credentials
+
     async def get_imap_credentials(
         self,
         email: str,

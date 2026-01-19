@@ -11,8 +11,19 @@ from .handlers import (
     to_find_receipts,
     to_main,
     shift_year,
+    process_clicked,
+    buttons,
 )
 from dialogs.states import Mail
+
+
+button_months = [
+    Button(
+        text=Const(month_name),
+        id=button_id,
+        on_click=process_clicked,
+    ) for button_id, month_name in buttons.items()
+]
 
 
 mail_dialog = Dialog(
@@ -36,7 +47,7 @@ mail_dialog = Dialog(
     ),
     Window(
         Format(
-            text="Выбери дату",
+            text="Выбери месяц",
         ),
         Button(
             text=Format(
@@ -46,58 +57,13 @@ mail_dialog = Dialog(
         ),
         Group(
             Row(
-                Button(
-                    text=Const("Январь"),
-                    id="btn_january",
-                ),
-                Button(
-                    text=Const("Февраль"),
-                    id="btn_february",
-                ),
-                Button(
-                    text=Const("Март"),
-                    id="btn_march",
-                ),
-                Button(
-                    text=Const("Апрель"),
-                    id="btn_april",
-                ),
+                *button_months[:4],
             ),
             Row(
-                Button(
-                    text=Const("Май"),
-                    id="btn_may",
-                ),
-                Button(
-                    text=Const("Июнь"),
-                    id="btn_june",
-                ),
-                Button(
-                    text=Const("Июль"),
-                    id="btn_jule",
-                ),
-                Button(
-                    text=Const("Август"),
-                    id="btn_august",
-                ),
+                *button_months[4:8],
             ),
             Row(
-                Button(
-                    text=Const("Сентябрь"),
-                    id="btn_september",
-                ),
-                Button(
-                    text=Const("Октябрь"),
-                    id="btn_october",
-                ),
-                Button(
-                    text=Const("Ноябрь"),
-                    id="btn_november",
-                ),
-                Button(
-                    text=Const("Декабрь"),
-                    id="btn_december",
-                ),
+                *button_months[8:]
             ),
             Row(
                 Button(

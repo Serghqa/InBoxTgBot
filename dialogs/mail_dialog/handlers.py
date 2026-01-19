@@ -18,6 +18,22 @@ from dialogs.states import StartSG, Mail
 logger = logging.getLogger(__name__)
 
 
+buttons = {
+    "btn_january": "Январь",
+    "btn_february": "Февраль",
+    "btn_march": "Март",
+    "btn_april": "Апрель",
+    "btn_may": "Май",
+    "btn_june": "Июнь",
+    "btn_jule": "Июль",
+    "btn_august": "Август",
+    "btn_september": "Сентябрь",
+    "btn_october": "Октябрь",
+    "btn_november": "Ноябрь",
+    "btn_december": "Декабрь",
+}
+
+
 async def exit_mail(
     callback: CallbackQuery,
     widget: Button,
@@ -71,3 +87,12 @@ async def shift_year(
         year += 1
 
     dialog_manager.dialog_data["year"] = year
+
+
+async def process_clicked(
+    callback: CallbackQuery,
+    widget: Button,
+    dialog_manager: DialogManager
+) -> None:
+
+    pass

@@ -33,7 +33,7 @@ mail_dialog = Dialog(
         ),
         Row(
             Button(
-                text=Const("Найти квитанции"),
+                text=Const("Найти почту"),
                 id="btn_find_receipts",
                 on_click=to_find_receipts,
             ),

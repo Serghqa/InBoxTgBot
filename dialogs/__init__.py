@@ -3,6 +3,7 @@ from .add_mail_dialog import add_mail_dialog
 from .select_mail_dialog import select_mail_dialog
 from .mail_dialog import mail_dialog
 from .del_mail_dialog import del_mail_dialog
+from .reading_mail_dialog import reading_mail_dialog
 
 
 routers = [
@@ -12,6 +13,7 @@ routers = [
     select_mail_dialog,
     mail_dialog,
     del_mail_dialog,
+    reading_mail_dialog,
 ]
 
 __all__ = [

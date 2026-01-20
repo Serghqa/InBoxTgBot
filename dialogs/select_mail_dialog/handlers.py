@@ -10,7 +10,7 @@ from aiogram_dialog import (
 from aiogram_dialog.api.entities.context import Context
 from aiogram_dialog.widgets.kbd import Button
 
-from dialogs.states import Mail, StartSG, DelMail
+from dialogs.states import PasswordMail, StartSG, DelMail
 
 
 logger = logging.getLogger(__name__)
@@ -60,12 +60,12 @@ async def to_mail(
     dialog_manager: DialogManager
 ) -> None:
 
-    start_data = _get_imap_data(dialog_manager)
+    start_data: dict[str, str] = _get_imap_data(dialog_manager)
     if start_data:
         await dialog_manager.start(
-            state=Mail.main,
+            state=PasswordMail.main,
             data=start_data,
-            mode=StartMode.RESET_STACK,
+            mode=StartMode.NORMAL,
             show_mode=ShowMode.EDIT,
         )
 

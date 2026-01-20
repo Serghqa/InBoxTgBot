@@ -4,6 +4,7 @@ from .select_mail_states import SelectMail
 from .mail_states import Mail
 from .del_mail_states import DelMail
 from .reading_mail_states import ReadingMail
+from .password_mail import PasswordMail
 
 
 __all__ = [
@@ -13,4 +14,5 @@ __all__ = [
     Mail,
     DelMail,
     ReadingMail,
+    PasswordMail,
 ]

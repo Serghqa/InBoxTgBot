@@ -11,9 +11,11 @@ from aiogram_dialog.widgets.kbd import (
     Button,
 )
 from email.header import decode_header
+from email.message import Message as EmailMessage
 from email.utils import parseaddr
 from datetime import datetime, date
 from imapclient import IMAPClient
+from imapclient.response_types import SearchIds
 from zoneinfo import ZoneInfo
 
 from dialogs.states import StartSG, Mail, ReadingMail
@@ -37,6 +39,65 @@ buttons = {
     "btn_november": "Ноябрь",
     "btn_december": "Декабрь",
 }
+
+MONTH_DATA = {
+    "Январь": 1, "Февраль": 2, "Март": 3, "Апрель": 4,
+    "Май": 5, "Июнь": 6, "Июль": 7, "Август": 8,
+    "Сентябрь": 9, "Октябрь": 10, "Ноябрь": 11, "Декабрь": 12,
+}
+
+
+def _parse_data(
+    data: list[tuple[bytes, str | None]],
+    default_content: str,
+    charset="utf-8"
+) -> str:
+
+    content = default_content
+
+    raw_content: bytes | str
+    charset: str | None
+    raw_content, charset = data[0]
+
+    if isinstance(raw_content, bytes):
+        content = raw_content.decode(charset or "utf-8")
+    elif isinstance(raw_content, str) and len(raw_content) > 0:
+        content = raw_content
+
+    return content
+
+
+def _get_from_email(message: EmailMessage) -> tuple[str, str]:
+
+    message = message.get("From")
+    sender_email, name_email = parseaddr(message)
+    result: list[tuple[bytes, str | None]] = decode_header(sender_email)
+
+    if not result:
+        return "", ""
+
+    sender: str = _parse_data(
+        data=result,
+        default_content="Без имени",
+    )
+
+    return sender, name_email
+
+
+def _get_subject_email(message: EmailMessage) -> str:
+
+    message = message.get("Subject")
+    result: list[tuple[bytes, str | None]] = decode_header(message)
+
+    if not result:
+        return ""
+
+    subject: str = _parse_data(
+        data=result,
+        default_content="Без темы",
+    )
+
+    return subject
 
 
 async def exit_mail(
@@ -100,23 +161,8 @@ async def process_clicked(
     dialog_manager: DialogManager
 ) -> None:
 
-    month_data = {
-        "Январь": 1,
-        "Февраль": 2,
-        "Март": 3,
-        "Апрель": 4,
-        "Май": 5,
-        "Июнь": 6,
-        "Июль": 7,
-        "Август": 8,
-        "Сентябрь": 9,
-        "Октябрь": 10,
-        "Ноябрь": 11,
-        "Декабрь": 12,
-    }
-
     month_name: str = buttons.get(widget.widget_id)
-    month_num: int = month_data.get(month_name, 1)
+    month_num: int = MONTH_DATA.get(month_name, 1)
     year: int = dialog_manager.dialog_data.get("year")
 
     since = date(year, month_num, 1)
@@ -135,27 +181,22 @@ async def process_clicked(
     encrypted = SecureEncryptor(user_id)
     password_mail: str = encrypted.decrypted_data(encrypted_password)
 
-    addresses = []
-
     with IMAPClient(imap_server, use_uid=True,) as server:
         server.login(login, password_mail)
         server.select_folder("INBOX", readonly=True)
 
-        messages = server.search([u"SINCE", since, u"BEFORE", before])
+        messages: SearchIds = \
+            server.search([u"SINCE", since, u"BEFORE", before])
+
         for uid, message_data in server.fetch(messages, "RFC822").items():
-            raw_email = message_data[b"RFC822"]
-            email_message = email.message_from_bytes(raw_email)
+            raw_email: bytes = message_data[b"RFC822"]
+            email_message: EmailMessage = email.message_from_bytes(raw_email)
+            sender, email_name = _get_from_email(email_message)
+            print(f"От {sender}: {email_name}")
+            subject = _get_subject_email(email_message)
+            print(f"Тема: {subject}")
 
-            from_header = email_message.get("From")
-            data_email, sender_email = parseaddr(from_header)
-            addresses.append(sender_email)
-            data = decode_header(data_email)
-            print(data)
-
-    start_data = {
-        "addresses": addresses,
-    }
-    print(start_data)
+            # subject_message = email_message.get("Subject")
 
     # await dialog_manager.start(
     #     state=ReadingMail.main,

@@ -42,11 +42,11 @@ async def password_validate(
     if result_password:
         login: str = dialog_manager.start_data.get("login")
         host: str = dialog_manager.start_data.get("host")
-        password: str = encryptor.encrypt_data(message.text)
+        encrypted_password: str = encryptor.encrypt_data(message.text)
         start_data = {
             "login": login,
             "host": host,
-            "password": password,
+            "password": encrypted_password,
         }
         await message.answer(
             text="Верно"

@@ -100,6 +100,23 @@ def _get_subject_email(message: EmailMessage) -> str:
     return subject
 
 
+def _get_since_before_criteria(
+    year: int,
+    month: int,
+    day: int
+) -> tuple[date, date]:
+
+    since = date(year, month, day)
+    month_before = month + 1
+    year_before = year
+    if month_before > 12:
+        month_before = 1
+        year_before += 1
+    before = date(year_before, month_before, day)
+
+    return since, before
+
+
 async def exit_mail(
     callback: CallbackQuery,
     widget: Button,
@@ -165,13 +182,11 @@ async def process_clicked(
     month_num: int = MONTH_DATA.get(month_name, 1)
     year: int = dialog_manager.dialog_data.get("year")
 
-    since = date(year, month_num, 1)
-    month_before = month_num + 1
-    year_before = year
-    if month_before > 12:
-        month_before = 1
-        year_before += 1
-    before = date(year_before, month_before, 1)
+    since, before = _get_since_before_criteria(
+        year=year,
+        month=month_num,
+        day=1,
+    )
 
     user_id: int = dialog_manager.event.from_user.id
     imap_server: str = dialog_manager.start_data.get("host")

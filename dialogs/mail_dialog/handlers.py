@@ -1,7 +1,10 @@
+import asyncio
 import email
 import logging
+import re
 
-from aiogram.types import CallbackQuery
+from aiogram import Bot
+from aiogram.types import CallbackQuery, BufferedInputFile
 from aiogram_dialog import (
     DialogManager,
     ShowMode,
@@ -20,6 +23,7 @@ from zoneinfo import ZoneInfo
 
 from dialogs.states import StartSG, Mail, ReadingMail
 from db.services import SecureEncryptor
+from db.services import ImapService
 
 
 logger = logging.getLogger(__name__)
@@ -47,59 +51,6 @@ MONTH_DATA = {
 }
 
 
-def _parse_data(
-    data: list[tuple[bytes, str | None]],
-    default_content: str,
-    charset="utf-8"
-) -> str:
-
-    content = default_content
-
-    raw_content: bytes | str
-    charset: str | None
-    raw_content, charset = data[0]
-
-    if isinstance(raw_content, bytes):
-        content = raw_content.decode(charset or "utf-8")
-    elif isinstance(raw_content, str) and len(raw_content) > 0:
-        content = raw_content
-
-    return content
-
-
-def _get_from_email(message: EmailMessage) -> tuple[str, str]:
-
-    message = message.get("From")
-    sender_email, name_email = parseaddr(message)
-    result: list[tuple[bytes, str | None]] = decode_header(sender_email)
-
-    if not result:
-        return "", ""
-
-    sender: str = _parse_data(
-        data=result,
-        default_content="Без имени",
-    )
-
-    return sender, name_email
-
-
-def _get_subject_email(message: EmailMessage) -> str:
-
-    message = message.get("Subject")
-    result: list[tuple[bytes, str | None]] = decode_header(message)
-
-    if not result:
-        return ""
-
-    subject: str = _parse_data(
-        data=result,
-        default_content="Без темы",
-    )
-
-    return subject
-
-
 def _get_since_before_criteria(
     year: int,
     month: int,
@@ -109,9 +60,11 @@ def _get_since_before_criteria(
     since = date(year, month, day)
     month_before = month + 1
     year_before = year
+
     if month_before > 12:
         month_before = 1
         year_before += 1
+
     before = date(year_before, month_before, day)
 
     return since, before
@@ -130,7 +83,7 @@ async def exit_mail(
     )
 
 
-async def to_find_receipts(
+async def to_find_mail(
     callback: CallbackQuery,
     widget: Button,
     dialog_manager: DialogManager
@@ -178,6 +131,14 @@ async def process_clicked(
     dialog_manager: DialogManager
 ) -> None:
 
+    user_id: int = dialog_manager.event.from_user.id
+    imap_server: str = dialog_manager.start_data.get("host")
+    login: str = dialog_manager.start_data.get("login")
+    encrypted_password: str = dialog_manager.start_data.get("password")
+
+    encrypted = SecureEncryptor(user_id)
+    password_mail: str = encrypted.decrypted_data(encrypted_password)
+
     month_name: str = buttons.get(widget.widget_id)
     month_num: int = MONTH_DATA.get(month_name, 1)
     year: int = dialog_manager.dialog_data.get("year")
@@ -188,30 +149,46 @@ async def process_clicked(
         day=1,
     )
 
-    user_id: int = dialog_manager.event.from_user.id
-    imap_server: str = dialog_manager.start_data.get("host")
-    login: str = dialog_manager.start_data.get("login")
-    encrypted_password: str = dialog_manager.start_data.get("password")
-
-    encrypted = SecureEncryptor(user_id)
-    password_mail: str = encrypted.decrypted_data(encrypted_password)
-
-    with IMAPClient(imap_server, use_uid=True,) as server:
-        server.login(login, password_mail)
-        server.select_folder("INBOX", readonly=True)
+    with ImapService(imap_server, login, password_mail) as imap_service:
+        client: IMAPClient = imap_service.client
+        client.select_folder("INBOX", readonly=True)
 
         messages: SearchIds = \
-            server.search([u"SINCE", since, u"BEFORE", before])
+            client.search([u"SINCE", since, u"BEFORE", before])
 
-        for uid, message_data in server.fetch(messages, "RFC822").items():
+        for uid, message_data in client.fetch(messages, "RFC822").items():
             raw_email: bytes = message_data[b"RFC822"]
             email_message: EmailMessage = email.message_from_bytes(raw_email)
-            sender, email_name = _get_from_email(email_message)
-            print(f"От {sender}: {email_name}")
-            subject = _get_subject_email(email_message)
-            print(f"Тема: {subject}")
 
-            # subject_message = email_message.get("Subject")
+            sender, email_name = imap_service.get_from_email(email_message)
+
+            subject: str = imap_service.get_subject_email(email_message)
+
+            text: str
+            attachments: list[tuple[str, bytes]]
+            text, attachments = imap_service.get_data_mail(email_message)
+
+            text_message = f"Сообщение от {sender}. Тема: {subject}"
+            print(text_message)
+            print(f"Текст: {text}")
+            print(f"Вложения {attachments}")
+
+            # tasks = []
+            # bot: Bot = dialog_manager.event.bot
+            # for file_name, attachment in attachments:
+            #     file = BufferedInputFile(
+            #         file=attachment,
+            #         filename=file_name,
+            #     )
+            #     task = asyncio.create_task(
+            #         send_attachment(bot, user_id, file)
+            #     )
+            #     tasks.append(task)
+            # result = await asyncio.gather(
+            #     *tasks,
+            #     return_exceptions=True,
+            # )
+            # print(result)
 
     # await dialog_manager.start(
     #     state=ReadingMail.main,

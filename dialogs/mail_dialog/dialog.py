@@ -8,7 +8,7 @@ from aiogram_dialog.widgets.text import Const, Format
 from .getters import get_data
 from .handlers import (
     exit_mail,
-    to_find_receipts,
+    to_find_mail,
     to_main,
     shift_year,
     process_clicked,
@@ -34,8 +34,8 @@ mail_dialog = Dialog(
         Row(
             Button(
                 text=Const("Найти почту"),
-                id="btn_find_receipts",
-                on_click=to_find_receipts,
+                id="btn_find_mail",
+                on_click=to_find_mail,
             ),
             Button(
                 text=Const("Выйти"),

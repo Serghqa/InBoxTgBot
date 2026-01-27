@@ -6,6 +6,7 @@ from .models import (
 from .services import (
     UserDAO,
     SecureEncryptor,
+    ImapService,
 )
 
 
@@ -14,5 +15,6 @@ __all__ = [
     User,
     UserDAO,
     SecureEncryptor,
+    ImapService,
     set_user,
 ]

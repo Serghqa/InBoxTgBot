@@ -51,6 +51,7 @@ async def password_validate(
         await message.answer(
             text="Верно"
         )
+        await message.delete()
         await dialog_manager.start(
             state=Mail.main,
             data=start_data,

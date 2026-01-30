@@ -1,9 +1,37 @@
 import re
 
+from aiogram_dialog import DialogManager
+from dataclasses import dataclass
+from datetime import datetime
 from email.header import decode_header
 from email.message import Message
 from email.utils import parseaddr
 from imapclient import IMAPClient
+from imapclient.response_types import SearchIds
+
+
+@dataclass
+class ImapAuthData:
+
+    user_id: int
+    imap_server: str
+    login: str
+    encrypted_password: str
+
+
+def get_imap_auth_data(dialog_manager: DialogManager) -> ImapAuthData:
+
+    user_id: int = dialog_manager.event.from_user.id
+    imap_server: str = dialog_manager.start_data.get("host")
+    login: str = dialog_manager.start_data.get("login")
+    encrypted_password: str = dialog_manager.start_data.get("password")
+
+    return ImapAuthData(
+        user_id=user_id,
+        imap_server=imap_server,
+        login=login,
+        encrypted_password=encrypted_password,
+    )
 
 
 class ImapService:
@@ -124,7 +152,7 @@ class ImapService:
 
         return content
 
-    def get_data_mail(
+    def get_data_email(
         self,
         message: Message
     ) -> tuple[str, list[tuple[str, bytes]]]:
@@ -168,3 +196,14 @@ class ImapService:
         result_text = re.sub(r"\n{2,}", "\n", join_text.replace('\r\n', '\n'))
 
         return result_text, attachments
+
+    def get_internaldate_messages(
+        self,
+        ids_messages: SearchIds
+    ) -> dict[int, datetime]:
+
+        response = self.client.fetch(ids_messages, ["INTERNALDATE"])
+
+        return {
+            ids: data[b"INTERNALDATE"] for ids, data in response.items()
+        }

@@ -12,9 +12,18 @@ async def get_data(
     today = datetime.now(tz)
 
     year: int = dialog_manager.dialog_data.setdefault("year", today.year)
+    months_abbr: list[str] = dialog_manager.dialog_data.get("months_abbr", [])
+    messages: list[int] = dialog_manager.dialog_data.get("messages", [])
+    data_select: list[str, int, int] = [
+        (abbr, item, count)
+        for item, (abbr, count) in enumerate(zip(months_abbr, messages), 1)
+    ]
 
     data = {
         "year": year,
+        "months_abbr": months_abbr,
+        "messages": messages,
+        "data_select": data_select,
     }
     data.update(dialog_manager.start_data)
 

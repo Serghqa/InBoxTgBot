@@ -3,7 +3,7 @@ from .add_mail_states import AddMail
 from .select_mail_states import SelectMail
 from .mail_states import Mail
 from .del_mail_states import DelMail
-from .reading_mail_states import ReadingMail
+from .select_letter_states import SelectLetter
 from .password_mail_states import PasswordMail
 
 
@@ -13,6 +13,6 @@ __all__ = [
     SelectMail,
     Mail,
     DelMail,
-    ReadingMail,
+    SelectLetter,
     PasswordMail,
 ]

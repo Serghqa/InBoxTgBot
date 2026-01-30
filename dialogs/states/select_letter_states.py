@@ -1,6 +1,6 @@
 from aiogram.fsm.state import State, StatesGroup
 
 
-class ReadingMail(StatesGroup):
+class SelectLetter(StatesGroup):
 
     main = State()

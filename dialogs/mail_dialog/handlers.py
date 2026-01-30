@@ -22,12 +22,18 @@ from imapclient import IMAPClient
 from imapclient.response_types import SearchIds
 from zoneinfo import ZoneInfo
 
-from dialogs.states import StartSG, Mail, ReadingMail
+from dialogs.states import StartSG, Mail, SelectLetter
 from db.services import SecureEncryptor
 from db.services import ImapService, ImapAuthData, get_imap_auth_data
 
 
 logger = logging.getLogger(__name__)
+
+
+RU_MONTHS = [
+    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+]
 
 
 class CustomSelect(Select):
@@ -310,10 +316,11 @@ async def process_clicked(
         start_data = {}
         start_data.update(dialog_manager.start_data)
         start_data["messages"] = result_data
-        start_data["date"] = f"{since.strftime('%B')} {since.strftime('%Y')}"
+        start_data["period"] = \
+            f"{RU_MONTHS[since.month-1]} {since.strftime('%Y')}"
 
         await dialog_manager.start(
-            state=ReadingMail.main,
+            state=SelectLetter.main,
             data=start_data,
             show_mode=ShowMode.EDIT,
         )
@@ -340,7 +347,6 @@ async def process_result(
 ) -> None:
 
     try:
-        raise ValueError
         await _update_calendar_data(dialog_manager)
     except Exception:
         logger.error(

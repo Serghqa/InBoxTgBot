@@ -2,19 +2,19 @@ from aiogram_dialog import (
     Dialog,
     Window,
 )
-from aiogram_dialog.widgets.kbd import Button, Group, Row, Select, Column
+from aiogram_dialog.widgets.kbd import Button, Select, Column
 from aiogram_dialog.widgets.text import Const, Format
 from operator import itemgetter
 
-from dialogs.states import ReadingMail
+from dialogs.states import SelectLetter
 from .getters import get_data
 from .handlers import exit_mail, on_mail
 
 
-reading_mail_dialog = Dialog(
+select_letter_dialog = Dialog(
     Window(
         Format(
-            text="{date}",
+            text="{period}",
         ),
         Column(
             Select(
@@ -31,7 +31,7 @@ reading_mail_dialog = Dialog(
             on_click=exit_mail,
         ),
         getter=get_data,
-        state=ReadingMail.main,
+        state=SelectLetter.main,
     ),
 )
 

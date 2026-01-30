@@ -2,7 +2,7 @@ from aiogram_dialog import (
     Dialog,
     Window,
 )
-from aiogram_dialog.widgets.kbd import Button, Select, Column
+from aiogram_dialog.widgets.kbd import Button, Select, Column, ScrollingGroup, PrevPage, NextPage, Row
 from aiogram_dialog.widgets.text import Const, Format
 from operator import itemgetter
 
@@ -16,13 +16,29 @@ select_letter_dialog = Dialog(
         Format(
             text="{period}",
         ),
-        Column(
-            Select(
-                text=Format('{item[0]}'),
-                id="select_mail",
-                item_id_getter=itemgetter(1),
-                items="select_ids",
-                on_click=on_mail,
+        ScrollingGroup(
+            Column(
+                Select(
+                    text=Format('{item[0]}'),
+                    id="select_mail",
+                    item_id_getter=itemgetter(1),
+                    items="select_ids",
+                    on_click=on_mail,
+                ),
+            ),
+            id="mail_scroll",
+            width=1,
+            height=5,
+            hide_pager=True,
+        ),
+        Row(
+            PrevPage(
+                scroll="mail_scroll",
+                text=Const("⬅️"),
+            ),
+            NextPage(
+                scroll="mail_scroll",
+                text=Const("➡️"),
             ),
         ),
         Button(

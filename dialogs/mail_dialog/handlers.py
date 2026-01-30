@@ -160,9 +160,10 @@ def _fetch_imap_counts(
 def _get_months_abbr(dialog_manager: DialogManager) -> list[str]:
 
     months_abbr: list[str] = \
-        dialog_manager.dialog_data.get("moths_abbr")
+        dialog_manager.dialog_data.get("months_abbr")
     if months_abbr is None:
-        months_dict = get_month_names("abbreviated", locale="ru")
+        months_dict = \
+            get_month_names("abbreviated", locale="ru", context="stand-alone")
         months_abbr = [
             months_dict[i].replace('.', '').capitalize() for i in range(1, 13)
         ]

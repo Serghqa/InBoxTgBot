@@ -3,7 +3,7 @@ import re
 from aiogram_dialog import DialogManager
 from dataclasses import dataclass
 from datetime import datetime
-from email.header import decode_header
+from email.header import decode_header, make_header
 from email.message import Message
 from email.utils import parseaddr
 from imapclient import IMAPClient
@@ -163,20 +163,23 @@ class ImapService:
         if message.is_multipart():
             for part in message.walk():
                 content_type = part.get_content_type()
-                content_disposition = part.get_content_disposition()
+                content_disposition = \
+                    str(part.get_content_disposition()).lower()
 
                 if (
                     content_type == "text/plain"
-                    and content_disposition != "attachment"
+                    and "attachment" not in content_disposition
                 ):
-                    body = part.get_payload(decode=True)
+                    paylod = part.get_payload(decode=True)
                     charset = part.get_content_charset() or "utf-8"
-                    text: str = body.decode(charset)
+                    text: str = paylod.decode(charset, errors="ignore")
 
                     texts.append(text.strip())
 
-                elif content_disposition == "attachment":
-                    filename = part.get_filename()
+                elif "attachment" in content_disposition:
+                    raw_filename = part.get_filename()
+                    filename = str(make_header(decode_header(raw_filename)))
+
                     payload_bytes = part.get_payload(decode=True)
 
                     if filename and payload_bytes:
@@ -184,9 +187,9 @@ class ImapService:
         else:
             content_type = message.get_content_type()
             if content_type == "text/plain":
-                body = message.get_payload(decode=True)
+                payload = message.get_payload(decode=True)
                 charset = message.get_content_charset() or "utf-8"
-                text: str = body.decode(charset)
+                text: str = payload.decode(charset)
                 texts.append(text.strip())
 
         if not texts:

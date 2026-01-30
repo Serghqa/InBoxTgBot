@@ -117,8 +117,9 @@ def _get_data_messages(
             ids_messages,
             ["RFC822.HEADER", "INTERNALDATE"]
         ).items():
-            raw_email: bytes = message_data[b"RFC822.HEADER"]
-            email_message: EmailMessage = email.message_from_bytes(raw_email)
+            message_bytes: bytes = message_data[b"RFC822.HEADER"]
+            email_message: EmailMessage = \
+                email.message_from_bytes(message_bytes)
 
             sender, email_name = imap_service.get_from_email(email_message)
             subject: str = imap_service.get_subject_email(email_message)

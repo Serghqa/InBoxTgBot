@@ -27,7 +27,7 @@ select_letter_dialog = Dialog(
         ),
         Button(
             text=Const("Назад"),
-            id="btn_back",
+            id="btn_exit",
             on_click=exit_mail,
         ),
         getter=get_data,

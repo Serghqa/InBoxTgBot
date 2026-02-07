@@ -1,5 +1,3 @@
-import re
-
 from aiogram_dialog import DialogManager
 from dataclasses import dataclass
 from datetime import datetime
@@ -174,7 +172,7 @@ class ImapService:
                     charset = part.get_content_charset() or "utf-8"
                     text: str = paylod.decode(charset, errors="ignore")
 
-                    texts.append(text.strip())
+                    texts.append(text)
 
                 elif "attachment" in content_disposition:
                     raw_filename = part.get_filename()
@@ -190,13 +188,12 @@ class ImapService:
                 payload = message.get_payload(decode=True)
                 charset = message.get_content_charset() or "utf-8"
                 text: str = payload.decode(charset)
-                texts.append(text.strip())
+                texts.append(text)
 
         if not texts:
             texts.append("Без текста")
 
-        join_text = "".join(texts)
-        result_text = re.sub(r"\n{2,}", "\n", join_text.replace('\r\n', '\n'))
+        result_text = "\n".join(texts)
 
         return result_text, attachments
 

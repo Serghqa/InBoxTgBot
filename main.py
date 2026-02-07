@@ -34,8 +34,8 @@ def setting_dispatcher(dispatcher: Dispatcher) -> None:
     router = Router()
 
     router: Router = setup_all_dialogs(router)
-    router.callback_query.middleware(LoggingMiddleware())
-    router.message.middleware(LoggingMiddleware())
+    # router.callback_query.middleware(LoggingMiddleware())
+    # router.message.middleware(LoggingMiddleware())
 
     dispatcher.include_router(router)
     setup_dialogs(dispatcher)

@@ -2,13 +2,37 @@ from aiogram_dialog import (
     Dialog,
     Window,
 )
-from aiogram_dialog.widgets.kbd import Button, Select, Column, ScrollingGroup, PrevPage, NextPage, Row
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.kbd import (
+    Button,
+    Select,
+    Column,
+    ScrollingGroup,
+    StubScroll,
+    PrevPage,
+    NextPage,
+    CurrentPage,
+    Row,
+)
+from aiogram_dialog.widgets.text import Const, Format, List
 from operator import itemgetter
 
 from dialogs.states import SelectLetter
-from .getters import get_data
-from .handlers import exit_mail, on_mail
+from .getters import (
+    get_data,
+    get_data_letter,
+    get_text_data,
+    get_data_attachments,
+)
+from .handlers import (
+    exit_mail,
+    on_mail,
+    to_main,
+    to_read_letter,
+    stop_text_read,
+    to_read_attachments,
+    stop_attachment_read,
+    on_attachment,
+)
 
 
 select_letter_dialog = Dialog(
@@ -36,6 +60,10 @@ select_letter_dialog = Dialog(
                 scroll="mail_scroll",
                 text=Const("⬅️"),
             ),
+            CurrentPage(
+                scroll="mail_scroll",
+                text=Format("{current_page1} / {pages}"),
+            ),
             NextPage(
                 scroll="mail_scroll",
                 text=Const("➡️"),
@@ -48,6 +76,110 @@ select_letter_dialog = Dialog(
         ),
         getter=get_data,
         state=SelectLetter.main,
+    ),
+    Window(
+        Format(
+            text="Отправитель: '{sender}'",
+        ),
+        Format(
+            text="Тема: '{subject}'",
+        ),
+        Row(
+            Button(
+                text=Const("Читать"),
+                id="btn_to_read",
+                on_click=to_read_letter,
+            ),
+            Button(
+                text=Const("Вложения"),
+                id="btn_to_attachments",
+                on_click=to_read_attachments,
+            ),
+        ),
+        Button(
+            text=Const("Назад"),
+            id="btn_to_main",
+            on_click=to_main,
+        ),
+        getter=get_data_letter,
+        state=SelectLetter.letter,
+    ),
+    Window(
+        Format(
+            text="Текст письма:",
+        ),
+        List(
+            field=Format("{item}"),
+            items="pages",
+            id="scroll_pages",
+            page_size=1,
+        ),
+        StubScroll(
+            id="scroll_pages",
+            pages="pages_amount",
+        ),
+        Row(
+            PrevPage(
+                scroll="scroll_pages",
+                text=Const("⬅️"),
+            ),
+            CurrentPage(
+                scroll="scroll_pages",
+                text=Format("{current_page1} / {pages}"),
+            ),
+            NextPage(
+                scroll="scroll_pages",
+                text=Const("➡️"),
+            ),
+        ),
+        Button(
+            text=Const("Назад"),
+            id="btn_stop_read",
+            on_click=stop_text_read,
+        ),
+        getter=get_text_data,
+        state=SelectLetter.text,
+    ),
+    Window(
+        Format(
+            text="Выбери вложение:",
+        ),
+        ScrollingGroup(
+            Column(
+                Select(
+                    text=Format('{item[0]}'),
+                    id="select_attachment",
+                    item_id_getter=itemgetter(1),
+                    items="select_attachments",
+                    on_click=on_attachment,
+                ),
+            ),
+            id="scroll_attachment",
+            width=1,
+            height=3,
+            hide_pager=True,
+        ),
+        Row(
+            PrevPage(
+                scroll="scroll_attachment",
+                text=Const("⬅️"),
+            ),
+            CurrentPage(
+                scroll="scroll_attachment",
+                text=Format("{current_page1} / {pages}"),
+            ),
+            NextPage(
+                scroll="scroll_attachment",
+                text=Const("➡️"),
+            ),
+        ),
+        Button(
+            text=Const("Назад"),
+            id="btn_stop_attachment",
+            on_click=stop_attachment_read,
+        ),
+        getter=get_data_attachments,
+        state=SelectLetter.attachment,
     ),
 )
 

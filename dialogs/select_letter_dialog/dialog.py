@@ -1,3 +1,4 @@
+from aiogram import F
 from aiogram_dialog import (
     Dialog,
     Window,
@@ -13,7 +14,7 @@ from aiogram_dialog.widgets.kbd import (
     CurrentPage,
     Row,
 )
-from aiogram_dialog.widgets.text import Const, Format, List
+from aiogram_dialog.widgets.text import Const, Format, List, Jinja
 from operator import itemgetter
 
 from dialogs.states import SelectLetter
@@ -32,13 +33,18 @@ from .handlers import (
     to_read_attachments,
     stop_attachment_read,
     on_attachment,
+    send_document,
 )
 
 
 select_letter_dialog = Dialog(
     Window(
-        Format(
-            text="{period}",
+        Jinja(
+            text="<b>{{period}}</b>",
+        ),
+        Jinja(
+            text="<i>Открываю письмо...</i>",
+            when=F["open_letter"],
         ),
         ScrollingGroup(
             Column(
@@ -58,7 +64,7 @@ select_letter_dialog = Dialog(
         Row(
             PrevPage(
                 scroll="mail_scroll",
-                text=Const("⬅️"),
+                text=Const("◀️"),
             ),
             CurrentPage(
                 scroll="mail_scroll",
@@ -66,11 +72,11 @@ select_letter_dialog = Dialog(
             ),
             NextPage(
                 scroll="mail_scroll",
-                text=Const("➡️"),
+                text=Const("▶️"),
             ),
         ),
         Button(
-            text=Const("Назад"),
+            text=Const("⬅️ Назад"),
             id="btn_exit",
             on_click=exit_mail,
         ),
@@ -78,26 +84,27 @@ select_letter_dialog = Dialog(
         state=SelectLetter.main,
     ),
     Window(
-        Format(
-            text="Отправитель: '{sender}'",
+        Jinja(
+            text="<b>🪪 Отправитель: '{{sender}}'</b>",
         ),
-        Format(
-            text="Тема: '{subject}'",
+        Jinja(
+            text="<b>📢 Тема: '{{subject}}'</b>",
         ),
         Row(
             Button(
-                text=Const("Читать"),
+                text=Const("📖 Читать"),
                 id="btn_to_read",
                 on_click=to_read_letter,
             ),
             Button(
-                text=Const("Вложения"),
+                text=Const("🗂️ Вложения"),
                 id="btn_to_attachments",
                 on_click=to_read_attachments,
+                when=F["is_attachments"],
             ),
         ),
         Button(
-            text=Const("Назад"),
+            text=Const("⬅️ Назад"),
             id="btn_to_main",
             on_click=to_main,
         ),
@@ -105,8 +112,8 @@ select_letter_dialog = Dialog(
         state=SelectLetter.letter,
     ),
     Window(
-        Format(
-            text="Текст письма:",
+        Jinja(
+            text="<b>📄 Текст письма:</b>",
         ),
         List(
             field=Format("{item}"),
@@ -121,7 +128,7 @@ select_letter_dialog = Dialog(
         Row(
             PrevPage(
                 scroll="scroll_pages",
-                text=Const("⬅️"),
+                text=Const("◀️"),
             ),
             CurrentPage(
                 scroll="scroll_pages",
@@ -129,11 +136,16 @@ select_letter_dialog = Dialog(
             ),
             NextPage(
                 scroll="scroll_pages",
-                text=Const("➡️"),
+                text=Const("▶️"),
             ),
         ),
         Button(
-            text=Const("Назад"),
+            text=Const("📩 Отправить текст"),
+            id="btn_send_text",
+            on_click=send_document,
+        ),
+        Button(
+            text=Const("⬅️ Назад"),
             id="btn_stop_read",
             on_click=stop_text_read,
         ),
@@ -141,8 +153,8 @@ select_letter_dialog = Dialog(
         state=SelectLetter.text,
     ),
     Window(
-        Format(
-            text="Выбери вложение:",
+        Jinja(
+            text="<b>Выбери вложение:</b>",
         ),
         ScrollingGroup(
             Column(
@@ -162,7 +174,7 @@ select_letter_dialog = Dialog(
         Row(
             PrevPage(
                 scroll="scroll_attachment",
-                text=Const("⬅️"),
+                text=Const("◀️"),
             ),
             CurrentPage(
                 scroll="scroll_attachment",
@@ -170,11 +182,11 @@ select_letter_dialog = Dialog(
             ),
             NextPage(
                 scroll="scroll_attachment",
-                text=Const("➡️"),
+                text=Const("▶️"),
             ),
         ),
         Button(
-            text=Const("Назад"),
+            text=Const("⬅️ Назад"),
             id="btn_stop_attachment",
             on_click=stop_attachment_read,
         ),
@@ -182,19 +194,3 @@ select_letter_dialog = Dialog(
         state=SelectLetter.attachment,
     ),
 )
-
-# START_DATA={
-#     'login': 'psl.ru@mail.ru',
-#     'host': 'imap.mail.ru',
-#     'password': 'gAAAAABpeyTYtu486JdTGXeMOWLSYS5IsNMfkalhY-CYlgxJ14n8GaqFhiIiObGUISOt03LXWTRjsuIHhsRa5I2UIv3yIfIsAikQ6zSJ0EzlfbhocwyU46Y=',
-#     'date': 'Январь 2026',
-#     'messages': {
-#         58918: {'date': '2026-01-20', 'sender': 'Фонд капитального ремонта Пермского края', 'subject': 'Квитанция за январь 2026г.'},
-#         58920: {'date': '2026-01-21', 'sender': 'Google Play', 'subject': 'Мы изменили настройки конфиденциальности для Google Play'},
-#         58925: {'date': '2026-01-27', 'sender': 'ООО "Газпром межрегионгаз Пермь"', 'subject': 'Электронный платежный документ за январь 2026г.'},
-#         58929: {'date': '2026-01-28', 'sender': 'Территория партнерства', 'subject': 'Солдатова_24_191_012026.pdf'}
-#     }
-# }
-# DIALOG_DATA={}
-# WIDGET_DATA={}
-# STATE=<State 'ReadingMail:main'>

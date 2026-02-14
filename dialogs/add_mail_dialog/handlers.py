@@ -58,6 +58,9 @@ def login_validate(text: str) -> str:
 
 def password_validate(text: str) -> str:
 
+    if not text.isascii():
+        raise ValueError
+
     return text
 
 
@@ -68,7 +71,8 @@ async def success_login(
     text: str
 ) -> None:
 
-    await message.delete()
+    dialog_manager.dialog_data["login_err"] = False
+
     await dialog_manager.switch_to(
         state=AddMail.password,
         show_mode=ShowMode.EDIT,
@@ -91,40 +95,52 @@ async def success_password(
     name_mail: str = context.widget_data.get("login")
     password_mail: str = text
 
+    dialog_manager.dialog_data["password_err"] = False
+    dialog_manager.dialog_data["auth_err"] = False
+
     try:
         with IMAPClient(host) as client:
             client.login(name_mail, password_mail)
+
+            dialog_manager.dialog_data["host"] = host
+
+            encrypted = SecureEncryptor(user_id)
+            encrypted_password: str = encrypted.encrypt_data(password_mail)
+            widget.set_widget_data(dialog_manager, encrypted_password)
+
+            await dialog_manager.switch_to(
+                state=AddMail.add_mail,
+                show_mode=ShowMode.EDIT,
+            )
     except LoginError:
-        await message.answer("Неверный логин или пароль, попробуйте еще раз.")
-        return
+        dialog_manager.dialog_data["auth_err"] = True
+
     except IMAPClientError:
         logger.error("Ошибка подключения imapclient", exc_info=True)
         await message.answer(
-            "Произошла ошибка подключения к почте, попробуйте еще раз"
+            text="🆘 Ошибка подключения",
         )
-        return
-
-    dialog_manager.dialog_data["host"] = host
-
-    encrypted = SecureEncryptor(user_id)
-    encrypted_password: str = encrypted.encrypt_data(password_mail)
-    widget.set_widget_data(dialog_manager, encrypted_password)
-
-    await message.delete()
-    await dialog_manager.switch_to(
-        state=AddMail.add_mail,
-        show_mode=ShowMode.EDIT,
-    )
 
 
-async def input_error(
+async def login_error(
     message: Message,
     widget: ManagedTextInput,
     dialog_manager: DialogManager,
     error: ValueError
 ) -> None:
 
-    await message.answer("Недопустимый формат")
+    dialog_manager.dialog_data["login_err"] = True
+
+
+async def password_error(
+    message: Message,
+    widget: ManagedTextInput,
+    dialog_manager: DialogManager,
+    error: ValueError
+) -> None:
+
+    dialog_manager.dialog_data["password_err"] = True
+    dialog_manager.dialog_data["auth_err"] = False
 
 
 async def cancel_add_mail(
@@ -172,16 +188,19 @@ async def add_mail(
                 imap_server=host,
             )
         if imap_credentials is not None:
-            await callback.answer(
-                text="Эта почта уже добавлена.",
-                show_alert=True,
-            )
+            dialog_manager.dialog_data["is_mail"] = True
             return
+
+        dialog_manager.dialog_data["is_mail"] = False
 
         await user_dao.add_imap_credentials(
             email=name_mail,
             password=pwd_hash_str,
             imap_server=host,
+        )
+        await dialog_manager.switch_to(
+            state=AddMail.success_mail,
+            show_mode=ShowMode.EDIT,
         )
     except SQLAlchemyError:
         logger.error(
@@ -190,13 +209,19 @@ async def add_mail(
             exc_info=True,
         )
         await callback.answer(
-            text="Произошла ошибка, попробуйте еще раз.",
+            text="🆘 Произошла ошибка, попробуйте еще раз",
             show_alert=True,
         )
-        return
+
+
+async def to_login(
+    callback: CallbackQuery,
+    widget: Button,
+    dialog_manager: DialogManager
+) -> None:
 
     await dialog_manager.switch_to(
-        state=AddMail.success_mail,
+        state=AddMail.login,
         show_mode=ShowMode.EDIT,
     )
 

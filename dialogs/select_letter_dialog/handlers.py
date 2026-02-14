@@ -42,9 +42,20 @@ def _fetch_text_attachment(
     ) as imap_service:
         client: IMAPClient = imap_service.client
         client.select_folder("INBOX", readonly=True)
+
         raw_data = client.fetch([uid], ["RFC822"])
-        message_bytes = raw_data[uid][b"RFC822"]
-        message: EmailMessage = email.message_from_bytes(message_bytes)
+        if uid not in raw_data:
+            raise ...
+
+        message_bytes = \
+            raw_data[uid].get(b"RFC822") or raw_data[uid].get(b"BODY[]")
+        if not message_bytes:
+            raise ...
+
+        message: EmailMessage = email.message_from_bytes(
+            s=message_bytes,
+            policy=email.policy.default,
+        )
 
         text, attachments = imap_service.get_data_email(message)
 
@@ -134,7 +145,7 @@ async def on_attachment(
                 exc_info=True,
             )
             await callback.message.answer(
-                text=f"Не удалось отправить файл {filename}",
+                text=f"🆘 Не удалось отправить файл {filename}",
             )
 
 
@@ -143,13 +154,6 @@ async def to_read_letter(
     widget: Button,
     dialog_manager: DialogManager
 ) -> None:
-
-    text: str = dialog_manager.dialog_data.get("text")
-    if not text:
-        await callback.answer(
-            text="Письмо без текста",
-        )
-        return
 
     await dialog_manager.switch_to(
         state=SelectLetter.text,
@@ -163,18 +167,42 @@ async def to_read_attachments(
     dialog_manager: DialogManager
 ) -> None:
 
-    attachments: list[tuple[str, bytes]] = \
-        dialog_manager.dialog_data.get("attachments")
-    if not attachments:
-        await callback.answer(
-            text="Письмо без вложений",
-        )
-        return
-
     await dialog_manager.switch_to(
         state=SelectLetter.attachment,
         show_mode=ShowMode.EDIT,
     )
+
+
+async def send_document(
+    callback: CallbackQuery,
+    widget: Button,
+    dialog_manager: DialogManager
+) -> None:
+
+    text: str = dialog_manager.dialog_data.get("text", "")
+    document = BufferedInputFile(
+        file=text.encode("utf-8-sig"),
+        filename="text.txt",
+    )
+
+    async with ChatActionSender.upload_document(
+        bot=callback.bot,
+        chat_id=callback.message.chat.id,
+    ):
+        try:
+            await callback.message.answer_document(
+                document=document,
+                caption=f"Текст: {text[:12]}...",
+            )
+        except Exception:
+            logger.error(
+                "Ошибка при отправке текста письма",
+                exc_info=True,
+            )
+            await callback.answer(
+                text="🆘 Не удалось отправить текст, попробуйте еще раз",
+                show_alert=True,
+            )
 
 
 async def on_mail(
@@ -184,9 +212,6 @@ async def on_mail(
     item_id: str
 ) -> None:
 
-    await callback.answer(
-        text="Подождите, загружаю данные письма...",
-    )
     uid = int(item_id)
 
     imap_auth_data: ImapAuthData = get_imap_auth_data(dialog_manager)
@@ -194,6 +219,11 @@ async def on_mail(
     encrypted = SecureEncryptor(imap_auth_data.user_id)
     password_mail: str = \
         encrypted.decrypted_data(imap_auth_data.encrypted_password)
+
+    dialog_manager.dialog_data["open_letter"] = True
+    await dialog_manager.show(
+        show_mode=ShowMode.EDIT
+    )
 
     try:
         text, attachments = await asyncio.to_thread(
@@ -207,15 +237,18 @@ async def on_mail(
         dialog_manager.dialog_data["attachments"] = attachments
         dialog_manager.dialog_data["uid"] = uid
 
+        dialog_manager.dialog_data["open_letter"] = False
+
         await dialog_manager.switch_to(
             state=SelectLetter.letter,
             show_mode=ShowMode.EDIT,
         )
     except Exception:
+        dialog_manager.dialog_data["open_letter"] = False
         logger.error(
             "Ошибка при получении данных письма",
             exc_info=True
         )
         await callback.message.answer(
-            text="Не удалось загрузить содержимое письма."
+            text="🆘 Не удалось загрузить содержимое письма."
         )

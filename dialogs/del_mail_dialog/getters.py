@@ -6,4 +6,10 @@ async def get_data(
     **kwargs
 ) -> dict[str, str]:
 
-    return dialog_manager.start_data
+    data = {}
+
+    mail_is_none: bool = dialog_manager.dialog_data.get("mail_is_none", False)
+    data["mail_is_none"] = mail_is_none
+    data.update(dialog_manager.start_data)
+
+    return data

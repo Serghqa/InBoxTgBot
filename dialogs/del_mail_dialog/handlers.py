@@ -14,6 +14,27 @@ from dialogs.states import SelectMail
 logger = logging.getLogger(__name__)
 
 
+async def _set_start_data(
+    session: AsyncSession,
+    user_id: int
+) -> dict:
+
+    user_dao = UserDAO(session, user_id)
+
+    user_credentials: list[ImapCredentials] = \
+        await user_dao.get_user_credentials()
+    radio_imap_credentials = []
+    data_imap_credentials = {}
+    for item, credentials in enumerate(user_credentials, 1):
+        radio_imap_credentials.append((credentials.email, str(item)))
+        data_imap_credentials[str(item)] = credentials.get_data()
+
+    return {
+        "radio_mail_select": radio_imap_credentials,
+        "imap_credentials": data_imap_credentials,
+    }
+
+
 async def to_select_mail(
     callback: CallbackQuery,
     widget: Button,
@@ -23,10 +44,18 @@ async def to_select_mail(
     session: AsyncSession = dialog_manager.middleware_data.get("db_session")
     user_id: int = dialog_manager.event.from_user.id
 
-    user_dao = UserDAO(session, user_id)
     try:
-        user_credentials: list[ImapCredentials] = \
-            await user_dao.get_user_credentials()
+        start_data = await _set_start_data(
+            session=session,
+            user_id=user_id,
+        )
+
+        await dialog_manager.start(
+            state=SelectMail.main,
+            data=start_data,
+            mode=StartMode.RESET_STACK,
+            show_mode=ShowMode.EDIT,
+        )
     except SQLAlchemyError:
         logger.error(
             "Ошибка загрузки данных пользователя user_id=%s",
@@ -34,27 +63,9 @@ async def to_select_mail(
             exc_info=True,
         )
         await callback.answer(
-            text="Произошла ошибка, попробуйте еще раз.",
+            text="🆘 Произошла ошибка, попробуйте еще раз",
             show_alert=True,
         )
-        return
-    radio_imap_credentials = []
-    data_imap_credentials = {}
-    for item, credentials in enumerate(user_credentials, 1):
-        radio_imap_credentials.append((credentials.email, str(item)))
-        data_imap_credentials[str(item)] = credentials.get_data()
-
-    start_data = {
-        "radio_mail_select": radio_imap_credentials,
-        "imap_credentials": data_imap_credentials,
-    }
-
-    await dialog_manager.start(
-        state=SelectMail.main,
-        data=start_data,
-        mode=StartMode.RESET_STACK,
-        show_mode=ShowMode.EDIT,
-    )
 
 
 async def del_mail(
@@ -75,17 +86,25 @@ async def del_mail(
             email=email,
             imap_server=host,
         )
-        if result is None:
-            await callback.answer(
-                text="Не удалось удалить почту, либо она уже удалена.",
-                show_alert=True,
-            )
 
-        else:
-            await callback.answer(
-                text="Почта успешно удалена.",
-                show_alert=True,
-            )
+        if result is None:
+            dialog_manager.dialog_data["mail_is_none"] = True
+            return
+
+        dialog_manager.dialog_data["mail_is_none"] = False
+
+        start_data: dict = await _set_start_data(
+            session=session,
+            user_id=user_id,
+        )
+        await session.commit()
+
+        await dialog_manager.start(
+            state=SelectMail.main,
+            data=start_data,
+            mode=StartMode.RESET_STACK,
+            show_mode=ShowMode.EDIT,
+        )
     except SQLAlchemyError:
         logger.error(
             "Ошибка при попытке удалить %s user_id=%s",
@@ -93,6 +112,6 @@ async def del_mail(
             exc_info=True,
         )
         await callback.answer(
-            text="Произошла неожиданная ошибка, попробуйте еще раз.",
+            text="🆘 Произошла неожиданная ошибка, попробуйте еще раз",
             show_alert=True,
         )

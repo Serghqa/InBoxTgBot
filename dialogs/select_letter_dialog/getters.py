@@ -40,9 +40,12 @@ async def get_data(
         for ids, data in messages.items()
     ]
     str_period: str = dialog_manager.start_data.get("period")
+    open_letter: bool = dialog_manager.dialog_data.get("open_letter", False)
+
     return {
         "select_ids": select_ids,
         "period": str_period,
+        "open_letter": open_letter,
     }
 
 
@@ -72,6 +75,10 @@ async def get_data_letter(
 
     data = {}
 
+    attachments: list[tuple[str, bytes]] = \
+        dialog_manager.dialog_data.get("attachments")
+
+    data["is_attachments"] = True if attachments else False
     data["sender"] = message["sender"]
     data["subject"] = message["subject"]
 

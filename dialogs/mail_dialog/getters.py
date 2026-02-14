@@ -19,11 +19,16 @@ async def get_data(
         for item, (abbr, count) in enumerate(zip(months_abbr, messages), 1)
     ]
 
+    find_mail: bool = dialog_manager.dialog_data.get("find_mail", False)
+    load_mail: bool = dialog_manager.dialog_data.get("load_mail", False)
+
     data = {
         "year": year,
         "months_abbr": months_abbr,
         "messages": messages,
         "data_select": data_select,
+        "find_mail": find_mail,
+        "load_mail": load_mail,
     }
     data.update(dialog_manager.start_data)
 

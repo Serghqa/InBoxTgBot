@@ -6,4 +6,10 @@ async def get_data(
     **kwargs
 ) -> dict[str, str]:
 
-    return dialog_manager.start_data
+    data = {}
+    password_incorrect: bool = \
+        dialog_manager.dialog_data.get("password_incorrect", False)
+    data["password_incorrect"] = password_incorrect
+    data.update(dialog_manager.start_data)
+
+    return data

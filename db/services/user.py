@@ -58,7 +58,6 @@ class UserDAO(DAO):
 
         if imap_credentials is not None:
             await self.session.delete(imap_credentials)
-            await self.session.commit()
 
         return imap_credentials
 

@@ -1,10 +1,11 @@
+from aiogram import F
 from aiogram.enums import ContentType
 from aiogram_dialog import (
     Dialog,
     Window,
 )
 from aiogram_dialog.widgets.kbd import Button
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.text import Const, Jinja
 from aiogram_dialog.widgets.input import MessageInput
 
 from .handlers import (
@@ -17,15 +18,19 @@ from dialogs.states import PasswordMail
 
 password_mail_dialog = Dialog(
     Window(
-        Format(
-            text="Введите пароль от почты {login}",
+        Jinja(
+            text="<b>Отправь пароль от почты {{login}}</b>",
+        ),
+        Jinja(
+            text="<code>🚫 Неверный пароль</code>",
+            when=F["password_incorrect"],
         ),
         MessageInput(
             func=password_validate,
             content_types=ContentType.TEXT,
         ),
         Button(
-            text=Const("Отмена"),
+            text=Const("❌ Отмена"),
             id="btn_cancel",
             on_click=cancel_password,
         ),

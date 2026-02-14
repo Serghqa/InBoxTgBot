@@ -1,9 +1,10 @@
+from aiogram import F
 from aiogram_dialog import (
     Dialog,
     Window,
 )
 from aiogram_dialog.widgets.kbd import Button, Row
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.text import Const, Format, Jinja
 from operator import itemgetter
 
 from .getters import get_data
@@ -21,17 +22,21 @@ from dialogs.states import Mail
 
 mail_dialog = Dialog(
     Window(
-        Format(
-            text="Почта {login}",
+        Jinja(
+            text="<b>Почта {{login}}</b>",
+        ),
+        Jinja(
+            text="<i>Ищу почту...</i>",
+            when=F["find_mail"],
         ),
         Row(
             Button(
-                text=Const("Найти почту"),
+                text=Const("🔎 Найти почту"),
                 id="btn_find_mail",
                 on_click=to_find_mail,
             ),
             Button(
-                text=Const("Выйти"),
+                text=Const("🚪Выйти"),
                 id="btn_exit",
                 on_click=exit_mail,
             ),
@@ -39,8 +44,16 @@ mail_dialog = Dialog(
         state=Mail.main,
     ),
     Window(
-        Format(
-            text="Выбери месяц",
+        Jinja(
+            text="<b>🗓️ Выбери месяц</b>",
+        ),
+        Jinja(
+            text="<i>Ищу почту...</i>",
+            when=F["find_mail"],
+        ),
+        Jinja(
+            text="<i>Загружаю письма...</i>",
+            when=F["load_mail"],
         ),
         Button(
             text=Format(
@@ -68,7 +81,7 @@ mail_dialog = Dialog(
             ),
         ),
         Button(
-            text=Const("Назад"),
+            text=Const("⬅️ Назад"),
             id="btn_back_main",
             on_click=to_main,
         ),

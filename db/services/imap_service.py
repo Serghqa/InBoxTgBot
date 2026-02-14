@@ -98,15 +98,20 @@ class ImapService:
         email_message: Message
     ) -> str:
 
+        subject_default = "Без темы"
+
         message = email_message.get("Subject")
+        if not message:
+            return subject_default
+
         result: list[tuple[bytes, str | None]] = decode_header(message)
 
         if not result:
-            return ""
+            return subject_default
 
         subject: str = self._parse_data(
             data=result,
-            default_content="Без темы",
+            default_content=subject_default,
         )
 
         return subject
@@ -117,38 +122,37 @@ class ImapService:
     ) -> tuple[str, str]:
 
         message = email_message.get("From")
-        sender_email, name_email = parseaddr(message)
-        result: list[tuple[bytes, str | None]] = decode_header(sender_email)
+        if not message:
+            return "Без имени", "Неизвестный адрес"
 
-        if not result:
-            return "", ""
-
-        sender: str = self._parse_data(
-            data=result,
+        name_raw, address = parseaddr(message)
+        name_parts = decode_header(name_raw)
+        sender_name: str = self._parse_data(
+            data=name_parts,
             default_content="Без имени",
         )
 
-        return sender, name_email
+        return sender_name, address
 
     def _parse_data(
         self,
         data: list[tuple[bytes, str | None]],
-        default_content: str,
-        charset="utf-8"
+        default_content: str
     ) -> str:
 
-        content = default_content
+        parts = []
 
-        raw_content: bytes | str
-        charset: str | None
-        raw_content, charset = data[0]
+        for raw_content, charset in data:
+            if isinstance(raw_content, bytes):
+                decoded_part = \
+                    raw_content.decode(charset or "utf-8", errors="replace")
+                parts.append(decoded_part)
+            elif isinstance(raw_content, str):
+                parts.append(raw_content)
 
-        if isinstance(raw_content, bytes):
-            content = raw_content.decode(charset or "utf-8")
-        elif isinstance(raw_content, str) and len(raw_content) > 0:
-            content = raw_content
+        content = "".join(parts).strip()
 
-        return content
+        return content if content else default_content
 
     def get_data_email(
         self,
@@ -158,42 +162,32 @@ class ImapService:
         attachments = []
         texts = []
 
-        if message.is_multipart():
-            for part in message.walk():
-                content_type = part.get_content_type()
-                content_disposition = \
-                    str(part.get_content_disposition()).lower()
-
-                if (
-                    content_type == "text/plain"
-                    and "attachment" not in content_disposition
-                ):
-                    paylod = part.get_payload(decode=True)
+        for part in message.walk():
+            content_type = part.get_content_type()
+            content_disposition = \
+                str(part.get_content_disposition()).lower()
+            if (
+                content_type == "text/plain"
+                and "attachment" not in content_disposition
+            ):
+                paylod = part.get_payload(decode=True)
+                if paylod:
                     charset = part.get_content_charset() or "utf-8"
-                    text: str = paylod.decode(charset, errors="ignore")
-
+                    text: str = paylod.decode(charset, errors="replace")
                     texts.append(text)
-
-                elif "attachment" in content_disposition:
-                    raw_filename = part.get_filename()
+            elif "attachment" in content_disposition or part.get_filename():
+                raw_filename = part.get_filename()
+                if raw_filename:
                     filename = str(make_header(decode_header(raw_filename)))
+                else:
+                    filename = f"attachment_{len(attachments) + 1}"
+                payload_bytes = part.get_payload(decode=True)
+                if payload_bytes:
+                    attachments.append((filename, payload_bytes))
 
-                    payload_bytes = part.get_payload(decode=True)
-
-                    if filename and payload_bytes:
-                        attachments.append((filename, payload_bytes))
-        else:
-            content_type = message.get_content_type()
-            if content_type == "text/plain":
-                payload = message.get_payload(decode=True)
-                charset = message.get_content_charset() or "utf-8"
-                text: str = payload.decode(charset)
-                texts.append(text)
-
-        if not texts:
-            texts.append("Без текста")
-
-        result_text = "\n".join(texts)
+        result_text = "\n".join(texts).strip()
+        if not result_text:
+            result_text = "Без текста"
 
         return result_text, attachments
 

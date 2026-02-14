@@ -4,7 +4,7 @@ from aiogram_dialog import (
     Window,
 )
 from aiogram_dialog.widgets.kbd import Button, Radio, Column, Row
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.text import Const, Format, Jinja
 from operator import itemgetter
 
 from .getters import get_data
@@ -14,8 +14,8 @@ from dialogs.states import SelectMail
 
 select_mail_dialog = Dialog(
     Window(
-        Format(
-            text="Выберите почту",
+        Jinja(
+            text="<b>Выбери почту 📩</b>",
         ),
         Column(
             Radio(
@@ -32,19 +32,19 @@ select_mail_dialog = Dialog(
         ),
         Row(
             Button(
-                Const("К почте"),
+                Const("📧 К почте"),
                 id="btn_to_mail",
                 on_click=to_mail,
             ),
             Button(
-                Const("Удалить почту"),
+                Const("🗑️ Удалить почту"),
                 id="btn_to_del",
                 on_click=to_del_mail,
             ),
             when=F["is_mail"],
         ),
         Button(
-            Const("Назад"),
+            Const("⬅️ Назад"),
             id="btn_back",
             on_click=back_to_start_dlg,
         ),

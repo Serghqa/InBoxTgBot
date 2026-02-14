@@ -12,9 +12,6 @@ from db.services import UserDAO
 from dialogs.states import AddMail, SelectMail
 
 
-MAIL_ITEM = "1"
-YANDEX_ITEM = "2"
-
 logger = logging.getLogger(__name__)
 
 
@@ -26,16 +23,9 @@ async def to_add_mail(
 
     config: Config = load_config()
 
-    start_data = {
-        "radio_mail_host": [
-            ("mail.ru", MAIL_ITEM),
-            ("yandex.ru", YANDEX_ITEM),
-        ],
-        "hosts": {
-            MAIL_ITEM: config.inbox.MAIL_SERVER,
-            YANDEX_ITEM: config.inbox.YANDEX_SERVER,
-        },
-    }
+    start_data = {"hosts": {}}
+    for item, server in enumerate(config.inbox.get_ordered_servers(), 1):
+        start_data["hosts"][str(item)] = server
 
     await dialog_manager.start(
         state=AddMail.main,
@@ -65,7 +55,7 @@ async def to_select_mail(
             exc_info=True,
         )
         await callback.answer(
-            text="Произошла ошибка, попробуйте еще раз.",
+            text="🆘 Произошла ошибка, попробуйте еще раз",
             show_alert=True,
         )
         return

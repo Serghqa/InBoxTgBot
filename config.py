@@ -11,9 +11,15 @@ class TgBot:
 @dataclass
 class InboxConfig:
 
-    USER_NAME: str
     MAIL_SERVER: str
     YANDEX_SERVER: str
+
+    def get_ordered_servers(self) -> list[str]:
+
+        return [
+            self.MAIL_SERVER,
+            self.YANDEX_SERVER,
+        ]
 
 
 @dataclass
@@ -46,7 +52,6 @@ def load_config(path: str | None = None) -> Config:
 
     return Config(
         inbox=InboxConfig(
-            USER_NAME=env("USER_NAME"),
             MAIL_SERVER=env("MAIL_SERVER"),
             YANDEX_SERVER=env("YANDEX_SERVER"),
         ),

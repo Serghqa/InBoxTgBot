@@ -12,7 +12,11 @@ from common import (
     Session,
     create_tables,
 )
-from middleware import LoggingMiddleware, DbSessionMiddleware
+from middleware import (
+    LoggingMiddleware,
+    DbSessionMiddleware,
+    MessageDeleterMiddleware,
+)
 from logging_setting import logging_config, setting_logging
 
 
@@ -34,8 +38,9 @@ def setting_dispatcher(dispatcher: Dispatcher) -> None:
     router = Router()
 
     router: Router = setup_all_dialogs(router)
-    # router.callback_query.middleware(LoggingMiddleware())
-    # router.message.middleware(LoggingMiddleware())
+    router.callback_query.middleware(LoggingMiddleware())
+    router.message.middleware(LoggingMiddleware())
+    router.message.middleware(MessageDeleterMiddleware())
 
     dispatcher.include_router(router)
     setup_dialogs(dispatcher)

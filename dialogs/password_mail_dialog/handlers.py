@@ -48,10 +48,8 @@ async def password_validate(
             "host": host,
             "password": encrypted_password,
         }
-        await message.answer(
-            text="Верно"
-        )
-        await message.delete()
+        dialog_manager.dialog_data["password_incorrect"] = False
+
         await dialog_manager.start(
             state=Mail.main,
             data=start_data,
@@ -59,6 +57,4 @@ async def password_validate(
             show_mode=ShowMode.SEND,
         )
     else:
-        await message.answer(
-            text="Неверный пароль",
-        )
+        dialog_manager.dialog_data["password_incorrect"] = True

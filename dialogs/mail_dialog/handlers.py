@@ -215,23 +215,28 @@ async def to_find_mail(
     dialog_manager: DialogManager
 ) -> None:
 
+    dialog_manager.dialog_data["find_mail"] = True
+    await dialog_manager.show(
+        show_mode=ShowMode.EDIT
+    )
+
     try:
         await _update_calendar_data(dialog_manager)
+        dialog_manager.dialog_data["find_mail"] = False
+        await dialog_manager.switch_to(
+            state=Mail.calendar,
+            show_mode=ShowMode.EDIT,
+        )
     except Exception:
+        dialog_manager.dialog_data["find_mail"] = False
         logger.error(
             "Ошибка обновления данных календаря",
             exc_info=True,
         )
         await callback.answer(
-            text="Не получилось, попробуй еще раз",
+            text="🆘 Не получилось, попробуй еще раз",
             show_alert=True,
         )
-        return
-
-    await dialog_manager.switch_to(
-        state=Mail.calendar,
-        show_mode=ShowMode.EDIT,
-    )
 
 
 async def to_main(
@@ -264,19 +269,25 @@ async def shift_year(
     if widget.widget_id == "btn_next":
         year += 1
 
+    dialog_manager.dialog_data["find_mail"] = True
+    await dialog_manager.show(
+        show_mode=ShowMode.EDIT
+    )
     dialog_manager.dialog_data["year"] = year
     try:
         await _update_calendar_data(dialog_manager)
+        dialog_manager.dialog_data["find_mail"] = False
     except Exception:
+        dialog_manager.dialog_data["find_mail"] = False
+        dialog_manager.dialog_data["year"] = old_year
         logger.error(
             "Ошибка обновления данных календаря",
             exc_info=True,
         )
         await callback.answer(
-            text="Не получилось, попробуй еще раз",
+            text="🆘 Не получилось, попробуй еще раз",
             show_alert=True,
         )
-        dialog_manager.dialog_data["year"] = old_year
 
 
 async def process_clicked(
@@ -299,6 +310,11 @@ async def process_clicked(
     old_messages: list[int] = dialog_manager.dialog_data.get("messages")
     month_messages: int = old_messages[month_item-1]
 
+    dialog_manager.dialog_data["load_mail"] = True
+    await dialog_manager.show(
+        show_mode=ShowMode.EDIT
+    )
+
     try:
         result_data: dict = await asyncio.to_thread(
             _get_data_messages,
@@ -307,12 +323,9 @@ async def process_clicked(
             month_messages,
         )
 
-        if not result_data:
-            await callback.answer(
-                text="В выбранном месяце нет писем",
-                show_alert=True,
-            )
+        dialog_manager.dialog_data["load_mail"] = False
 
+        if not result_data:
             return
 
         start_data = {}
@@ -327,17 +340,20 @@ async def process_clicked(
             show_mode=ShowMode.EDIT,
         )
     except ValueError:
+        dialog_manager.dialog_data["load_mail"] = False
+        await _update_calendar_data(dialog_manager)
         await callback.answer(
-            text="Данные о сообщениях были изменены",
+            text="🚫 Данные о сообщениях были изменены",
             show_alert=True,
         )
     except Exception:
+        dialog_manager.dialog_data["load_mail"] = False
         logger.error(
             "Ошибка извлечения данных из писем",
             exc_info=True,
         )
         await callback.answer(
-            text="Не удалось получить ваши письма, попробуйте еще раз",
+            text="🆘 Не удалось получить ваши письма, попробуйте еще раз",
             show_alert=True,
         )
 
@@ -356,7 +372,7 @@ async def process_result(
             exc_info=True,
         )
         await dialog_manager.event.answer(
-            text="Не удалось загрузить список писем",
+            text="🆘 Не удалось загрузить список писем",
             show_alert=True,
         )
         months_abbr: list[str] = _get_months_abbr(dialog_manager)

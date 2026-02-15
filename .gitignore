@@ -176,3 +176,6 @@ cython_debug/
 pgdata/
 
 data/
+
+# Redis data
+redis/data/

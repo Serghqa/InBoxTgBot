@@ -14,7 +14,7 @@ from common import (
     redis_storage,
 )
 from middleware import (
-    LoggingMiddleware,
+    # LoggingMiddleware,
     DbSessionMiddleware,
 )
 from logging_setting import logging_config, setting_logging

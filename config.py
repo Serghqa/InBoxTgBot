@@ -29,6 +29,7 @@ class DbConfig:
     DB_PASSWORD: str
     DB_HOST: str
     DB_NAME: str
+    DB_PORT: int
 
 
 @dataclass
@@ -71,7 +72,8 @@ def load_config(path: str | None = None) -> Config:
             DB_USER=env("POSTGRES_USER"),
             DB_PASSWORD=env("POSTGRES_PASSWORD"),
             DB_HOST=env("POSTGRES_HOST"),
-            DB_NAME=env("POSTGRES_NAME"),
+            DB_NAME=env("POSTGRES_DB"),
+            DB_PORT=env("POSTGRES_PORT")
         ),
         redis=RedisConfig(
             HOST=env("REDIS_HOST"),

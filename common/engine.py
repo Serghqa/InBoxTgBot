@@ -20,7 +20,7 @@ def create_engine(config: Config) -> AsyncEngine:
         url=(
             f"postgresql+asyncpg://"
             f"{config.db.DB_USER}:{config.db.DB_PASSWORD}@"
-            f"{config.db.DB_HOST}/{config.db.DB_NAME}"
+            f"{config.db.DB_HOST}:{config.db.DB_PORT}/{config.db.DB_NAME}"
         ),
         echo=False,
     )

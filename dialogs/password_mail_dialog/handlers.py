@@ -40,6 +40,8 @@ async def password_validate(
     result_password = encryptor.authenticate(message.text, pwd_hash_str)
 
     if result_password:
+        await message.delete()
+
         login: str = dialog_manager.start_data.get("login")
         host: str = dialog_manager.start_data.get("host")
         encrypted_password: str = encryptor.encrypt_data(message.text)

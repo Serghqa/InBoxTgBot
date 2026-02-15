@@ -73,6 +73,8 @@ async def success_login(
 
     dialog_manager.dialog_data["login_err"] = False
 
+    await message.delete()
+
     await dialog_manager.switch_to(
         state=AddMail.password,
         show_mode=ShowMode.EDIT,
@@ -101,6 +103,7 @@ async def success_password(
     try:
         with IMAPClient(host) as client:
             client.login(name_mail, password_mail)
+            await message.delete()
 
             dialog_manager.dialog_data["host"] = host
 

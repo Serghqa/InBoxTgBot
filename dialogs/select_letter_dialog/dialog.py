@@ -85,10 +85,10 @@ select_letter_dialog = Dialog(
     ),
     Window(
         Jinja(
-            text="<b>🪪 Отправитель: '{{sender}}'</b>",
+            text="<b>🪪 Отправитель: </b>'{{sender}}'",
         ),
         Jinja(
-            text="<b>📢 Тема: '{{subject}}'</b>",
+            text="<b>📢 Тема: </b>'{{subject}}'",
         ),
         Row(
             Button(

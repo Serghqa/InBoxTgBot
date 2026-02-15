@@ -32,6 +32,14 @@ class DbConfig:
 
 
 @dataclass
+class RedisConfig:
+
+    HOST: str
+    PORT: int
+    DB: int
+
+
+@dataclass
 class SecretKey:
 
     SECRET_KEY: str
@@ -43,6 +51,7 @@ class Config:
     inbox: InboxConfig
     tg_bot: TgBot
     db: DbConfig
+    redis: RedisConfig
     secret_key: SecretKey
 
 
@@ -63,6 +72,11 @@ def load_config(path: str | None = None) -> Config:
             DB_PASSWORD=env("POSTGRES_PASSWORD"),
             DB_HOST=env("POSTGRES_HOST"),
             DB_NAME=env("POSTGRES_NAME"),
+        ),
+        redis=RedisConfig(
+            HOST=env("REDIS_HOST"),
+            PORT=env("REDIS_PORT"),
+            DB=env("REDIS_DB"),
         ),
         secret_key=SecretKey(
             SECRET_KEY=env("SECRET_KEY"),

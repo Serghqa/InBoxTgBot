@@ -11,6 +11,7 @@ from common import (
     engine,
     Session,
     create_tables,
+    redis_storage,
 )
 from middleware import (
     LoggingMiddleware,
@@ -46,7 +47,7 @@ def setting_dispatcher(dispatcher: Dispatcher) -> None:
     setup_dialogs(dispatcher)
 
 
-dp = Dispatcher()
+dp = Dispatcher(storage=redis_storage)
 setting_dispatcher(dispatcher=dp)
 
 

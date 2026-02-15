@@ -1,5 +1,6 @@
 from .bot import bot, set_bot_commands
 from .engine import engine, create_tables, Session
+from .redis import redis_storage
 
 
 __all__ = [
@@ -8,4 +9,5 @@ __all__ = [
     engine,
     Session,
     create_tables,
+    redis_storage,
 ]

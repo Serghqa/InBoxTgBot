@@ -53,5 +53,4 @@ class ImapCredentials(Base):
             "email": self.email,
             "password": self.password,
             "imap_server": self.imap_server,
-            "user_id": self.user_id,
         }

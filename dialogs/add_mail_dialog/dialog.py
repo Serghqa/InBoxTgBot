@@ -83,10 +83,10 @@ add_mail_dialog = Dialog(
     ),
     Window(
         Jinja(
-            text="Логин: <tg-spoiler>{{login}} ✅</tg-spoiler>",
+            text="<b>💬 Отправь пароль</b>"
         ),
         Jinja(
-            text="<b>💬 Отправь пароль</b>"
+            text="Логин: <tg-spoiler>{{login}} ✅</tg-spoiler>",
         ),
         Jinja(
             text="<code>🚫 Недопустимый формат пароля</code>",

@@ -1,4 +1,5 @@
 from aiogram_dialog import DialogManager
+from base64 import b64encode
 from dataclasses import dataclass
 from datetime import datetime
 from email.header import decode_header, make_header
@@ -6,6 +7,10 @@ from email.message import Message
 from email.utils import parseaddr
 from imapclient import IMAPClient
 from imapclient.response_types import SearchIds
+from typing import TypeAlias
+
+
+Base64String: TypeAlias = str
 
 
 @dataclass
@@ -157,7 +162,7 @@ class ImapService:
     def get_data_email(
         self,
         message: Message
-    ) -> tuple[str, list[tuple[str, bytes]]]:
+    ) -> tuple[str, list[tuple[str, Base64String]]]:
 
         attachments = []
         texts = []
@@ -183,7 +188,8 @@ class ImapService:
                     filename = f"attachment_{len(attachments) + 1}"
                 payload_bytes = part.get_payload(decode=True)
                 if payload_bytes:
-                    attachments.append((filename, payload_bytes))
+                    b64_str = b64encode(payload_bytes).decode("utf8")
+                    attachments.append((filename, b64_str))
 
         result_text = "\n".join(texts).strip()
         if not result_text:

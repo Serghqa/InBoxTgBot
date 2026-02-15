@@ -14,8 +14,10 @@ from aiogram_dialog.widgets.kbd import (
 )
 from aiogram_dialog.widgets.common.scroll import ManagedScroll
 from aiogram.types import BufferedInputFile
+from base64 import b64decode
 from email.message import Message as EmailMessage
 from imapclient import IMAPClient
+from typing import TypeAlias
 
 from db.services import (
     ImapService,
@@ -29,11 +31,30 @@ from dialogs.states import SelectLetter
 logger = logging.getLogger(__name__)
 
 
+Base64String: TypeAlias = str
+
+
+class EmailServiceError(Exception):
+    pass
+
+
+class EmailNotFoundError(EmailServiceError):
+    def __init__(self, uid: str):
+        self.message = f"Письмо с UID {uid} не найдено в INBOX."
+        super().__init__(self.message)
+
+
+class EmailContentError(EmailServiceError):
+    def __init__(self, uid: str):
+        self.message = f"Не удалось получить содержимое письма с UID {uid}."
+        super().__init__(self.message)
+
+
 def _fetch_text_attachment(
     imap_auth_data: ImapAuthData,
-    uid: int,
+    uid: str,
     password: str
-) -> tuple[str, list[tuple[str, bytes]]]:
+) -> tuple[str, list[tuple[str, Base64String]]]:
 
     with ImapService(
         imap_auth_data.imap_server,
@@ -43,14 +64,17 @@ def _fetch_text_attachment(
         client: IMAPClient = imap_service.client
         client.select_folder("INBOX", readonly=True)
 
-        raw_data = client.fetch([uid], ["RFC822"])
-        if uid not in raw_data:
-            raise ...
+        raw_data = client.fetch([int(uid)], ["RFC822"])
+        if int(uid) not in raw_data:
+            raise EmailNotFoundError(uid)
 
-        message_bytes = \
-            raw_data[uid].get(b"RFC822") or raw_data[uid].get(b"BODY[]")
+        message_bytes = (
+            raw_data[int(uid)].get(b"RFC822")
+            or raw_data[int(uid)].get(b"BODY[]")
+        )
+
         if not message_bytes:
-            raise ...
+            raise EmailContentError(uid)
 
         message: EmailMessage = email.message_from_bytes(
             s=message_bytes,
@@ -122,9 +146,12 @@ async def on_attachment(
     item_id: str
 ) -> None:
 
-    attachments: list[tuple[str, bytes]] = \
+    attachments: list[tuple[str, Base64String]] = \
         dialog_manager.dialog_data.get("attachments")
-    filename, payload = attachments[int(item_id)]
+
+    filename, b64_str = attachments[int(item_id)]
+
+    payload: bytes = b64decode(b64_str.encode("utf8"))
 
     async with ChatActionSender.upload_document(
         bot=callback.bot,
@@ -212,7 +239,7 @@ async def on_mail(
     item_id: str
 ) -> None:
 
-    uid = int(item_id)
+    uid = item_id
 
     imap_auth_data: ImapAuthData = get_imap_auth_data(dialog_manager)
 
@@ -242,6 +269,24 @@ async def on_mail(
         await dialog_manager.switch_to(
             state=SelectLetter.letter,
             show_mode=ShowMode.EDIT,
+        )
+    except EmailNotFoundError:
+        logger.error(
+            "Ошибка: Письмо уже удалено или перемещено",
+            exc_info=True,
+        )
+        await callback.answer(
+            text="🆘 Письмо уже удалено или перемещено",
+            show_alert=True,
+        )
+    except EmailContentError:
+        logger.error(
+            "Ошибка: Письмо пустое или повреждено",
+            exc_info=True,
+        )
+        await callback.answer(
+            text="🆘 Письмо пустое или повреждено",
+            show_alert=True,
         )
     except Exception:
         dialog_manager.dialog_data["open_letter"] = False

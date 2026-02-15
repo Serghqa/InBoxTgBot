@@ -125,7 +125,7 @@ def _get_data_messages(
             subject: str = imap_service.get_subject_email(email_message)
             message_dt: datetime = message_data.get(b"INTERNALDATE")
 
-            result_data[uid] = {
+            result_data[str(uid)] = {
                 "date": message_dt.date().isoformat(),
                 "sender": sender,
                 "subject": subject,
@@ -178,7 +178,7 @@ async def _update_calendar_data(dialog_manager: DialogManager) -> None:
 
     imap_auth_data: ImapAuthData = get_imap_auth_data(dialog_manager)
 
-    year: int = dialog_manager.dialog_data.get("year")
+    year: int = int(dialog_manager.dialog_data.get("year"))
 
     encrypted = SecureEncryptor(imap_auth_data.user_id)
     password_mail: str = \
@@ -262,7 +262,7 @@ async def shift_year(
     tz = ZoneInfo("Asia/Yekaterinburg")
     today = datetime.now(tz)
 
-    year: int = dialog_manager.dialog_data.get("year", today.year)
+    year: int = int(dialog_manager.dialog_data.get("year", today.year))
     old_year = year
     if widget.widget_id == "btn_prev":
         year -= 1
@@ -297,17 +297,21 @@ async def process_clicked(
     item_id: str
 ) -> None:
 
+    tz = ZoneInfo("Asia/Yekaterinburg")
+    today = datetime.now(tz)
+
     imap_auth_data: ImapAuthData = get_imap_auth_data(dialog_manager)
 
     month_item: int = int(item_id)
-    year: int = dialog_manager.dialog_data.get("year")
+    year: int = int(dialog_manager.dialog_data.get("year", today.year))
 
     since, before = _get_since_before_criteria(
         year=year,
         month=month_item,
         day=1,
     )
-    old_messages: list[int] = dialog_manager.dialog_data.get("messages")
+    old_messages: list[int] = \
+        list(map(int, dialog_manager.dialog_data.get("messages", [0] * 12)))
     month_messages: int = old_messages[month_item-1]
 
     dialog_manager.dialog_data["load_mail"] = True

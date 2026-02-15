@@ -9,7 +9,11 @@ async def get_data(
     data = {}
 
     mail_is_none: bool = dialog_manager.dialog_data.get("mail_is_none", False)
+    is_password: bool = dialog_manager.dialog_data.get("is_password", False)
+
+    data["is_password"] = is_password
     data["mail_is_none"] = mail_is_none
+
     data.update(dialog_manager.start_data)
 
     return data

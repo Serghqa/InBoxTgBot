@@ -2,6 +2,10 @@ import textwrap
 
 from aiogram_dialog import DialogManager
 from html import escape
+from typing import TypeAlias
+
+
+Base64String: TypeAlias = str
 
 
 def _get_pages(text: str) -> list[str]:
@@ -54,7 +58,7 @@ async def get_data_attachments(
     **kwargs
 ) -> dict:
 
-    attachments: list[tuple[str, bytes]] = \
+    attachments: list[tuple[str, Base64String]] = \
         dialog_manager.dialog_data["attachments"]
     select_attachments = [
         (data[0], item) for item, data in enumerate(attachments)
@@ -70,12 +74,12 @@ async def get_data_letter(
     **kwargs
 ) -> dict:
 
-    uid: int = dialog_manager.dialog_data["uid"]
+    uid: str = dialog_manager.dialog_data["uid"]
     message: dict = dialog_manager.start_data["messages"][uid]
 
     data = {}
 
-    attachments: list[tuple[str, bytes]] = \
+    attachments: list[tuple[str, Base64String]] = \
         dialog_manager.dialog_data.get("attachments")
 
     data["is_attachments"] = True if attachments else False

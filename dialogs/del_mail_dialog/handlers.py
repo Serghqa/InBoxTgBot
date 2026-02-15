@@ -1,14 +1,15 @@
 import logging
 
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, ShowMode, StartMode
+from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
 from db.models import ImapCredentials
-from db.services import UserDAO
-from dialogs.states import SelectMail
+from db.services import UserDAO, SecureEncryptor
+from dialogs.states import SelectMail, DelMail
 
 
 logger = logging.getLogger(__name__)
@@ -69,7 +70,7 @@ async def to_select_mail(
 
 
 async def del_mail(
-    callback: CallbackQuery,
+    message: Message,
     widget: Button,
     dialog_manager: DialogManager
 ) -> None:
@@ -93,25 +94,55 @@ async def del_mail(
 
         dialog_manager.dialog_data["mail_is_none"] = False
 
-        start_data: dict = await _set_start_data(
-            session=session,
-            user_id=user_id,
-        )
         await session.commit()
 
-        await dialog_manager.start(
-            state=SelectMail.main,
-            data=start_data,
-            mode=StartMode.RESET_STACK,
+        await dialog_manager.switch_to(
+            state=DelMail.deleted,
             show_mode=ShowMode.EDIT,
         )
+
     except SQLAlchemyError:
         logger.error(
             "Ошибка при попытке удалить %s user_id=%s",
             ImapCredentials.__name__, user_id,
             exc_info=True,
         )
-        await callback.answer(
-            text="🆘 Произошла неожиданная ошибка, попробуйте еще раз",
-            show_alert=True,
+        await message.answer(
+            text="🆘 Произошла неожиданная ошибка, попробуйте еще раз"
         )
+
+
+async def password_validate(
+    message: Message,
+    widget: MessageInput,
+    dialog_manager: DialogManager
+) -> None:
+
+    user_id: int = dialog_manager.event.from_user.id
+    encryptor = SecureEncryptor(user_id)
+
+    pwd_hash_str: str = dialog_manager.start_data.get("password")
+    result_password = encryptor.authenticate(message.text, pwd_hash_str)
+
+    if result_password:
+        dialog_manager.dialog_data["is_password"] = False
+        await message.delete()
+
+        await dialog_manager.switch_to(
+            state=DelMail.deletion,
+            show_mode=ShowMode.EDIT,
+        )
+    else:
+        dialog_manager.dialog_data["is_password"] = True
+
+
+async def cancel_delete(
+    message: Message,
+    widget: Button,
+    dialog_manager: DialogManager
+) -> None:
+
+    await dialog_manager.switch_to(
+        state=DelMail.main,
+        show_mode=ShowMode.EDIT,
+    )

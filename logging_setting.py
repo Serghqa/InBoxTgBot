@@ -39,4 +39,4 @@ def setting_logging(config: dict) -> None:
 
     logging.config.dictConfig(config)
     logging.getLogger("aiogram.event").setLevel(logging.WARNING)
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)

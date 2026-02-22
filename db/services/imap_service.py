@@ -1,5 +1,6 @@
 from aiogram_dialog import DialogManager
 from base64 import b64encode
+from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from datetime import datetime
 from email.header import decode_header, make_header
@@ -159,6 +160,32 @@ class ImapService:
 
         return content if content else default_content
 
+    def _clean_html(self, html_content: str) -> str:
+
+        soup = BeautifulSoup(html_content, "html.parser")
+
+        for script_or_style in soup(["script", "style"]):
+            script_or_style.decompose()
+
+        for a in soup.find_all("a"):
+            link_text = a.get_text(strip=True)
+            href = a["href"]
+
+            if link_text and href:
+                if link_text == href:
+                    new_content = href
+                else:
+                    new_content = f"{link_text} ({href})"
+                a.replace_with(new_content)
+            elif href:
+                a.replace_with(href)
+
+        text = soup.get_text(separator="\n")
+
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+        return "\n".join(lines)
+
     def get_data_email(
         self,
         message: Message
@@ -166,6 +193,7 @@ class ImapService:
 
         attachments = []
         texts = []
+        html = []
 
         for part in message.walk():
             content_type = part.get_content_type()
@@ -180,6 +208,15 @@ class ImapService:
                     charset = part.get_content_charset() or "utf-8"
                     text: str = paylod.decode(charset, errors="replace")
                     texts.append(text)
+            elif (
+                content_type == "text/html"
+                and "attachment" not in content_disposition
+            ):
+                payload = part.get_payload(decode=True)
+                if payload:
+                    charset = part.get_content_charset() or "utf-8"
+                    html_part = payload.decode(charset, errors="replace")
+                    html.append(html_part)
             elif "attachment" in content_disposition or part.get_filename():
                 raw_filename = part.get_filename()
                 if raw_filename:
@@ -191,7 +228,13 @@ class ImapService:
                     b64_str = b64encode(payload_bytes).decode("utf8")
                     attachments.append((filename, b64_str))
 
-        result_text = "\n".join(texts).strip()
+        raw_html = "\n".join(html)
+        html_text = self._clean_html(raw_html)
+
+        text = "\n".join(texts).strip()
+
+        result_text = "\n".join((text, html_text))
+
         if not result_text:
             result_text = "Без текста"
 

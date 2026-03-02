@@ -19,7 +19,7 @@ from dialogs.states import PasswordMail
 password_mail_dialog = Dialog(
     Window(
         Jinja(
-            text="<b>Отправь пароль от почты {{login}}</b>",
+            text="<b>Отправь пароль от почты {{email}}</b>",
         ),
         Jinja(
             text="<code>🚫 Неверный пароль</code>",

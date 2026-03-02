@@ -11,6 +11,7 @@ from aiogram_dialog.widgets.kbd import Button
 
 from db.services import SecureEncryptor
 from dialogs.states import Mail
+from schemas import ImapSettings
 
 
 logger = logging.getLogger(__name__)
@@ -34,27 +35,23 @@ async def password_validate(
 ) -> None:
 
     user_id: int = dialog_manager.event.from_user.id
+    imap_settings = ImapSettings(**dialog_manager.start_data)
     encryptor = SecureEncryptor(user_id)
 
-    pwd_hash_str: str = dialog_manager.start_data.get("password")
+    pwd_hash_str: str = imap_settings.password
     result_password = encryptor.authenticate(message.text, pwd_hash_str)
 
     if result_password:
         await message.delete()
 
-        login: str = dialog_manager.start_data.get("login")
-        host: str = dialog_manager.start_data.get("host")
         encrypted_password: str = encryptor.encrypt_data(message.text)
-        start_data = {
-            "login": login,
-            "host": host,
-            "password": encrypted_password,
-        }
+        imap_settings.password = encrypted_password
+
         dialog_manager.dialog_data["password_incorrect"] = False
 
         await dialog_manager.start(
             state=Mail.main,
-            data=start_data,
+            data=imap_settings.model_dump(),
             mode=StartMode.RESET_STACK,
             show_mode=ShowMode.SEND,
         )

@@ -12,7 +12,7 @@ def truncate_address(address: str, max_length: int = 25) -> str:
 async def get_data(
     dialog_manager: DialogManager,
     **kwargs
-) -> dict[str, list[tuple[str, str]]]:
+) -> dict[str, list[tuple[str, str]] | bool]:
 
     #  radio_items = [("mail.ru", "1"), ("yandex.ru", "2"), ...]
     radio_items: list[tuple[str, str]] = [

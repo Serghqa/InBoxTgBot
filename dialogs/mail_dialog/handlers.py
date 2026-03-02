@@ -25,6 +25,7 @@ from zoneinfo import ZoneInfo
 from dialogs.states import StartSG, Mail, SelectLetter
 from db.services import SecureEncryptor
 from db.services import ImapService, ImapAuthData, get_imap_auth_data
+from schemas import MessageHeader
 
 
 logger = logging.getLogger(__name__)
@@ -86,20 +87,20 @@ def _count_messages(data: dict[int, datetime]) -> list[int]:
 def _get_data_messages(
     imap_auth_data: ImapAuthData,
     interval: tuple[date, date],
-    month_messages: list[int]
+    month_messages: int
 ) -> dict:
 
     result_data = {}
 
     since, before = interval
     encrypted = SecureEncryptor(imap_auth_data.user_id)
-    password_mail: str = \
+    password: str = \
         encrypted.decrypted_data(imap_auth_data.encrypted_password)
 
     with ImapService(
         imap_auth_data.imap_server,
-        imap_auth_data.login,
-        password_mail,
+        imap_auth_data.email,
+        password,
     ) as imap_service:
         client: IMAPClient = imap_service.client
         client.select_folder("INBOX", readonly=True)
@@ -121,30 +122,35 @@ def _get_data_messages(
             email_message: EmailMessage = \
                 email.message_from_bytes(message_bytes)
 
-            sender, email_name = imap_service.get_from_email(email_message)
+            sender, address = imap_service.get_from_email(email_message)
             subject: str = imap_service.get_subject_email(email_message)
             message_dt: datetime = message_data.get(b"INTERNALDATE")
 
-            result_data[str(uid)] = {
-                "date": message_dt.date().isoformat(),
-                "sender": sender,
-                "subject": subject,
-            }
+            message_header = MessageHeader(
+                date=message_dt.date(),
+                sender=sender,
+                address=address,
+                subject=subject,
+            )
+            result_data[str(uid)] = message_header.model_dump()
 
     return result_data
 
 
 def _fetch_imap_counts(
     imap_auth_data: ImapAuthData,
-    password: str,
     since: date,
     before: date
 ) -> list[int]:
 
+    encrypted = SecureEncryptor(imap_auth_data.user_id)
+    password: str = \
+        encrypted.decrypted_data(imap_auth_data.encrypted_password)
+
     with ImapService(
-        imap_auth_data.imap_server,
-        imap_auth_data.login,
-        password,
+        imap_server=imap_auth_data.imap_server,
+        login=imap_auth_data.email,
+        password=password,
     ) as imap_service:
         client: IMAPClient = imap_service.client
         client.select_folder("INBOX", readonly=True)
@@ -180,16 +186,11 @@ async def _update_calendar_data(dialog_manager: DialogManager) -> None:
 
     year: int = int(dialog_manager.dialog_data.get("year"))
 
-    encrypted = SecureEncryptor(imap_auth_data.user_id)
-    password_mail: str = \
-        encrypted.decrypted_data(imap_auth_data.encrypted_password)
-
     since, before = date(year, 1, 1), date(year+1, 1, 1)
 
     monthy_counts: list[int] = await asyncio.to_thread(
         _fetch_imap_counts,
         imap_auth_data,
-        password_mail,
         since,
         before,
     )

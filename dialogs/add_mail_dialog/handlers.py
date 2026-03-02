@@ -14,13 +14,27 @@ from email_validator import validate_email, EmailNotValidError
 from imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError, LoginError
 from sqlalchemy.exc import SQLAlchemyError
+from typing import Any
 
+from config import load_config, Config
 from db.models import ImapCredentials
 from db.services import UserDAO, SecureEncryptor
 from dialogs.states import AddMail, Mail, StartSG
+from schemas import ImapSettings
 
 
 logger = logging.getLogger(__name__)
+
+
+def _set_widget_data(
+    context: Context,
+    widget_id: str,
+    value: Any
+) -> dict:
+
+    context.widget_data[widget_id] = value
+
+    return context.widget_data
 
 
 async def back_to_start_dlg(
@@ -42,7 +56,11 @@ async def process_start(
 ) -> None:
 
     context: Context = dialog_manager.current_context()
-    context.widget_data["radio_mail_host"] = "1"
+    _set_widget_data(
+        context=context,
+        widget_id="radio_mail_host",
+        value="1",
+    )
 
 
 def login_validate(text: str) -> str:
@@ -71,6 +89,7 @@ async def success_login(
 ) -> None:
 
     dialog_manager.dialog_data["login_err"] = False
+    dialog_manager.dialog_data["email"] = text
 
     await message.delete()
 
@@ -87,13 +106,19 @@ async def success_password(
     text: str
 ) -> None:
 
+    config: Config = load_config()
     user_id: int = dialog_manager.event.from_user.id
     context: Context = dialog_manager.current_context()
     host_item: str = context.widget_data.get("radio_mail_host")
-    hosts: dict[str, str] = dialog_manager.start_data.get("hosts")
+
+    hosts = {
+        str(item): server
+        for item, server in enumerate(config.inbox.get_ordered_servers(), 1)
+    }
+
     host: str = hosts.get(host_item)
 
-    name_mail: str = context.widget_data.get("login")
+    name_mail: str = dialog_manager.dialog_data.get("email")
     password_mail: str = text
 
     dialog_manager.dialog_data["password_err"] = False
@@ -104,11 +129,11 @@ async def success_password(
             client.login(name_mail, password_mail)
             await message.delete()
 
-            dialog_manager.dialog_data["host"] = host
-
             encrypted = SecureEncryptor(user_id)
             encrypted_password: str = encrypted.encrypt_data(password_mail)
-            widget.set_widget_data(dialog_manager, encrypted_password)
+            context.widget_data["password"] = encrypted_password
+            dialog_manager.dialog_data["imap_server"] = host
+            dialog_manager.dialog_data["password"] = encrypted_password
 
             await dialog_manager.switch_to(
                 state=AddMail.add_mail,
@@ -152,10 +177,15 @@ async def cancel_add_mail(
 ) -> None:
 
     context: Context = dialog_manager.current_context()
-    context.widget_data.pop("login", None)
-    context.widget_data.pop("password", None)
-
+    widget_id_radio: str = context.widget_data.get("radio_mail_host")
+    context.widget_data.clear()
     dialog_manager.dialog_data.clear()
+
+    _set_widget_data(
+        context=context,
+        widget_id="radio_mail_host",
+        value=widget_id_radio,
+    )
 
     await dialog_manager.switch_to(
         state=AddMail.main,
@@ -169,11 +199,8 @@ async def add_mail(
     dialog_manager: DialogManager
 ) -> None:
 
-    context: Context = dialog_manager.current_context()
-
-    name_mail: str = context.widget_data.get("login")
-    encrypted_password: str = context.widget_data.get("password")
-    host: str = dialog_manager.dialog_data.get("host")
+    imap_settings = ImapSettings(**dialog_manager.dialog_data)
+    encrypted_password: str = imap_settings.password
 
     user_dao = UserDAO(dialog_manager)
     encryptor = SecureEncryptor(user_dao.user_id)
@@ -184,8 +211,8 @@ async def add_mail(
     try:
         imap_credentials: ImapCredentials | None = \
             await user_dao.get_imap_credentials(
-                email=name_mail,
-                imap_server=host,
+                email=imap_settings.email,
+                imap_server=imap_settings.imap_server,
             )
         if imap_credentials is not None:
             dialog_manager.dialog_data["is_mail"] = True
@@ -194,9 +221,9 @@ async def add_mail(
         dialog_manager.dialog_data["is_mail"] = False
 
         await user_dao.add_imap_credentials(
-            email=name_mail,
+            email=imap_settings.email,
             password=pwd_hash_str,
-            imap_server=host,
+            imap_server=imap_settings.imap_server,
         )
         await dialog_manager.switch_to(
             state=AddMail.success_mail,
@@ -232,17 +259,9 @@ async def to_mail(
     dialog_manager: DialogManager
 ) -> None:
 
-    context: Context = dialog_manager.current_context()
+    imap_settings = ImapSettings(**dialog_manager.dialog_data)
 
-    host: str = dialog_manager.dialog_data.get("host")
-    name_mail: str = context.widget_data.get("login")
-    encrypted_password: str = context.widget_data.get("password")
-
-    start_data = {
-        "host": host,
-        "login": name_mail,
-        "password": encrypted_password,
-    }
+    start_data = imap_settings.model_dump()
 
     await dialog_manager.start(
         state=Mail.main,

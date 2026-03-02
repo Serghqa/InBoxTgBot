@@ -8,7 +8,7 @@ from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.text import Const, Format, Jinja
 from operator import itemgetter
 
-from .getters import get_data, get_data_mail, get_login
+from .getters import get_data, get_data_mail, get_login, get_data_servers
 from .handlers import (
     add_mail,
     back_to_start_dlg,
@@ -62,6 +62,7 @@ add_mail_dialog = Dialog(
                 on_click=to_login,
             ),
         ),
+        getter=get_data_servers,
         state=AddMail.main,
     ),
     Window(
@@ -86,7 +87,7 @@ add_mail_dialog = Dialog(
             text="<b>💬 Отправь пароль</b>"
         ),
         Jinja(
-            text="Логин: <tg-spoiler>{{login}} ✅</tg-spoiler>",
+            text="Логин: <tg-spoiler>{{email}} ✅</tg-spoiler>",
         ),
         Jinja(
             text="<code>🚫 Недопустимый формат пароля</code>",

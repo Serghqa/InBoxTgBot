@@ -10,6 +10,8 @@ from imapclient import IMAPClient
 from imapclient.response_types import SearchIds
 from typing import TypeAlias
 
+from schemas import ImapSettings
+
 
 Base64String: TypeAlias = str
 
@@ -19,22 +21,21 @@ class ImapAuthData:
 
     user_id: int
     imap_server: str
-    login: str
+    email: str
     encrypted_password: str
 
 
 def get_imap_auth_data(dialog_manager: DialogManager) -> ImapAuthData:
 
     user_id: int = dialog_manager.event.from_user.id
-    imap_server: str = dialog_manager.start_data.get("host")
-    login: str = dialog_manager.start_data.get("login")
-    encrypted_password: str = dialog_manager.start_data.get("password")
+
+    imap_settings = ImapSettings(**dialog_manager.start_data)
 
     return ImapAuthData(
         user_id=user_id,
-        imap_server=imap_server,
-        login=login,
-        encrypted_password=encrypted_password,
+        imap_server=imap_settings.imap_server,
+        email=imap_settings.email,
+        encrypted_password=imap_settings.password,
     )
 
 
@@ -133,12 +134,12 @@ class ImapService:
 
         name_raw, address = parseaddr(message)
         name_parts = decode_header(name_raw)
-        sender_name: str = self._parse_data(
+        sender: str = self._parse_data(
             data=name_parts,
             default_content="Без имени",
         )
 
-        return sender_name, address
+        return sender, address
 
     def _parse_data(
         self,

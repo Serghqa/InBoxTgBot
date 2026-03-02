@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from db.models import ImapCredentials
 from db.services import UserDAO, SecureEncryptor
 from dialogs.states import SelectMail, DelMail
+from schemas import ImapSettings
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,9 @@ async def _set_start_data(user_dao: UserDAO) -> dict:
     data_imap_credentials = {}
     for item, credentials in enumerate(user_credentials, 1):
         radio_imap_credentials.append((credentials.email, str(item)))
-        data_imap_credentials[str(item)] = credentials.get_data()
+
+        imap_settings = ImapSettings(**credentials.get_data())
+        data_imap_credentials[str(item)] = imap_settings.model_dump()
 
     return {
         "radio_mail_select": radio_imap_credentials,
@@ -66,13 +69,13 @@ async def del_mail(
 ) -> None:
 
     user_dao = UserDAO(dialog_manager)
-    email: str = dialog_manager.start_data.get("login")
-    host: str = dialog_manager.start_data.get("host")
+
+    imap_settings = ImapSettings(**dialog_manager.start_data)
 
     try:
         result: ImapCredentials | None = await user_dao.del_imap_credentials(
-            email=email,
-            imap_server=host,
+            email=imap_settings.email,
+            imap_server=imap_settings.imap_server,
         )
 
         if result is None:

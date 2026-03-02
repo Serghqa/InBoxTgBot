@@ -22,7 +22,7 @@ del_mail_dialog = Dialog(
     Window(
         Jinja(
             text="<b>Для подтверждения удаления отправь "
-            "пароль от почты {{login}}</b>",
+            "пароль от почты {{email}}</b>",
         ),
         Jinja(
             text="<code>🚫 Пароль неверный</code>",
@@ -41,7 +41,7 @@ del_mail_dialog = Dialog(
     ),
     Window(
         Jinja(
-            text="<b>Удалить почту {{login}}?</b>",
+            text="<b>Удалить почту {{email}}?</b>",
         ),
         Jinja(
             text="<code>🚫 Такой почты не существует</code>",
@@ -63,7 +63,7 @@ del_mail_dialog = Dialog(
     ),
     Window(
         Jinja(
-            text="<b>Почта {{login}} удалена ✅</b>",
+            text="<b>Почта {{email}} удалена ✅</b>",
         ),
         Button(
             text=Const("⬅️ Выйти"),

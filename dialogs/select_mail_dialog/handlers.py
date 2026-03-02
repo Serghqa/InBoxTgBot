@@ -11,6 +11,7 @@ from aiogram_dialog.api.entities.context import Context
 from aiogram_dialog.widgets.kbd import Button
 
 from dialogs.states import PasswordMail, StartSG, DelMail
+from schemas import ImapSettings
 
 
 logger = logging.getLogger(__name__)
@@ -28,15 +29,8 @@ def _get_imap_data(dialog_manager: DialogManager) -> dict[str, str]:
         if imap_credentials:
             imap_data: dict = imap_credentials.get(widget_item)
             if imap_data:
-                host: str = imap_data.get("imap_server")
-                name_mail: str = imap_data.get("email")
-                encrypted_password: str = imap_data.get("password")
-
-                data = {
-                    "host": host,
-                    "login": name_mail,
-                    "password": encrypted_password,
-                }
+                imap_settings = ImapSettings(**imap_data)
+                data = imap_settings.model_dump()
 
     return data
 

@@ -58,7 +58,7 @@ def _fetch_text_attachment(
 
     with ImapService(
         imap_auth_data.imap_server,
-        imap_auth_data.login,
+        imap_auth_data.email,
         password,
     ) as imap_service:
         client: IMAPClient = imap_service.client
@@ -244,7 +244,7 @@ async def on_mail(
     imap_auth_data: ImapAuthData = get_imap_auth_data(dialog_manager)
 
     encrypted = SecureEncryptor(imap_auth_data.user_id)
-    password_mail: str = \
+    password: str = \
         encrypted.decrypted_data(imap_auth_data.encrypted_password)
 
     dialog_manager.dialog_data["open_letter"] = True
@@ -257,7 +257,7 @@ async def on_mail(
             _fetch_text_attachment,
             imap_auth_data,
             uid,
-            password_mail,
+            password,
         )
 
         dialog_manager.dialog_data["text"] = text

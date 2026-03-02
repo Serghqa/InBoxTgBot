@@ -23,7 +23,7 @@ from dialogs.states import Mail
 mail_dialog = Dialog(
     Window(
         Jinja(
-            text="<b>Почта {{login}}</b>",
+            text="<b>Почта {{email}}</b>",
         ),
         Jinja(
             text="<i>Ищу почту...</i>",

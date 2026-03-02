@@ -5,10 +5,10 @@ from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.widgets.kbd import Button
 from sqlalchemy.exc import SQLAlchemyError
 
-from config import load_config, Config
 from db.models import ImapCredentials
 from db.services import UserDAO
 from dialogs.states import AddMail, SelectMail
+from schemas import ImapSettings
 
 
 logger = logging.getLogger(__name__)
@@ -20,15 +20,8 @@ async def to_add_mail(
     dialog_manager: DialogManager
 ) -> None:
 
-    config: Config = load_config()
-
-    start_data = {"hosts": {}}
-    for item, server in enumerate(config.inbox.get_ordered_servers(), 1):
-        start_data["hosts"][str(item)] = server
-
     await dialog_manager.start(
         state=AddMail.main,
-        data=start_data,
         mode=StartMode.RESET_STACK,
         show_mode=ShowMode.EDIT,
     )
@@ -59,7 +52,9 @@ async def to_select_mail(
     data_imap_credentials = {}
     for item, credentials in enumerate(user_credentials, 1):
         radio_imap_credentials.append((credentials.email, str(item)))
-        data_imap_credentials[str(item)] = credentials.get_data()
+
+        imap_settings = ImapSettings(**credentials.get_data())
+        data_imap_credentials[str(item)] = imap_settings.model_dump()
 
     start_data = {
         "radio_mail_select": radio_imap_credentials,

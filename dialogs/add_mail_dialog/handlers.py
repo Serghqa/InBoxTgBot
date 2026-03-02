@@ -14,7 +14,6 @@ from email_validator import validate_email, EmailNotValidError
 from imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError, LoginError
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import ImapCredentials
 from db.services import UserDAO, SecureEncryptor
@@ -172,14 +171,12 @@ async def add_mail(
 
     context: Context = dialog_manager.current_context()
 
-    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
     name_mail: str = context.widget_data.get("login")
     encrypted_password: str = context.widget_data.get("password")
     host: str = dialog_manager.dialog_data.get("host")
-    user_id: int = dialog_manager.event.from_user.id
 
-    user_dao = UserDAO(session, user_id)
-    encryptor = SecureEncryptor(user_id)
+    user_dao = UserDAO(dialog_manager)
+    encryptor = SecureEncryptor(user_dao.user_id)
 
     password: str = encryptor.decrypted_data(encrypted_password)
     pwd_hash_str: str = encryptor.generate_hash_str(password)

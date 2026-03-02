@@ -12,7 +12,6 @@ from aiogram_dialog import (
 from aiogram_dialog.widgets.kbd import Button, Row
 from aiogram_dialog.widgets.text import Const, Jinja
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from .handlers import (
     to_add_mail,
@@ -34,12 +33,7 @@ async def command_start(
     dialog_manager: DialogManager
 ) -> None:
 
-    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
-    user_id: int = dialog_manager.event.from_user.id
-    user_dao = UserDAO(
-        session=session,
-        user_id=user_id,
-    )
+    user_dao = UserDAO(dialog_manager)
 
     try:
         user: User | None = await user_dao.get_user()

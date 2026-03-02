@@ -4,7 +4,6 @@ from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
 from db.models import ImapCredentials
@@ -15,12 +14,7 @@ from dialogs.states import SelectMail, DelMail
 logger = logging.getLogger(__name__)
 
 
-async def _set_start_data(
-    session: AsyncSession,
-    user_id: int
-) -> dict:
-
-    user_dao = UserDAO(session, user_id)
+async def _set_start_data(user_dao: UserDAO) -> dict:
 
     user_credentials: list[ImapCredentials] = \
         await user_dao.get_user_credentials()
@@ -42,14 +36,10 @@ async def to_select_mail(
     dialog_manager: DialogManager
 ) -> None:
 
-    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
-    user_id: int = dialog_manager.event.from_user.id
+    user_dao = UserDAO(dialog_manager)
 
     try:
-        start_data = await _set_start_data(
-            session=session,
-            user_id=user_id,
-        )
+        start_data = await _set_start_data(user_dao)
 
         await dialog_manager.start(
             state=SelectMail.main,
@@ -60,7 +50,7 @@ async def to_select_mail(
     except SQLAlchemyError:
         logger.error(
             "Ошибка загрузки данных пользователя user_id=%s",
-            user_id,
+            user_dao.user_id,
             exc_info=True,
         )
         await callback.answer(
@@ -75,10 +65,7 @@ async def del_mail(
     dialog_manager: DialogManager
 ) -> None:
 
-    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
-    user_id: int = dialog_manager.event.from_user.id
-
-    user_dao = UserDAO(session, user_id)
+    user_dao = UserDAO(dialog_manager)
     email: str = dialog_manager.start_data.get("login")
     host: str = dialog_manager.start_data.get("host")
 
@@ -94,7 +81,7 @@ async def del_mail(
 
         dialog_manager.dialog_data["mail_is_none"] = False
 
-        await session.commit()
+        await user_dao.session.commit()
 
         await dialog_manager.switch_to(
             state=DelMail.deleted,
@@ -104,7 +91,7 @@ async def del_mail(
     except SQLAlchemyError:
         logger.error(
             "Ошибка при попытке удалить %s user_id=%s",
-            ImapCredentials.__name__, user_id,
+            ImapCredentials.__name__, user_dao.user_id,
             exc_info=True,
         )
         await message.answer(

@@ -3,7 +3,6 @@ import logging
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.widgets.kbd import Button
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
 from config import load_config, Config
@@ -41,17 +40,14 @@ async def to_select_mail(
     dialog_manager: DialogManager
 ) -> None:
 
-    session: AsyncSession = dialog_manager.middleware_data.get("db_session")
-    user_id: int = dialog_manager.event.from_user.id
-
-    user_dao = UserDAO(session, user_id)
+    user_dao = UserDAO(dialog_manager)
     try:
         user_credentials: list[ImapCredentials] = \
             await user_dao.get_user_credentials()
     except SQLAlchemyError:
         logger.error(
             "Ошибка загрузки данных пользователя user_id=%s",
-            user_id,
+            user_dao.user_id,
             exc_info=True,
         )
         await callback.answer(
